@@ -20,12 +20,52 @@
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        h1 { font-size: 4rem; margin: 10px 0; color: #00e676; }
+        .tempo-interface {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        /* Styl dla pola wpisywania tempa */
+        .bpm-input {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #00e676;
+            background: transparent;
+            border: none;
+            border-bottom: 3px dashed #333;
+            text-align: center;
+            width: 160px;
+            outline: none;
+        }
+        .bpm-input:focus {
+            border-bottom: 3px solid #00e676;
+        }
+        /* Styl dla przycisków + oraz - */
+        .step-btn {
+            background: #333;
+            color: #fff;
+            border: none;
+            font-size: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .step-btn:hover {
+            background: #444;
+            color: #00e676;
+        }
         input[type=range] {
             width: 100%;
             margin: 20px 0;
         }
-        button {
+        .main-btn {
             background: #00e676;
             color: #000;
             border: none;
@@ -35,8 +75,9 @@
             border-radius: 25px;
             cursor: pointer;
             width: 100%;
+            margin-top: 10px;
         }
-        button:hover { background: #00b359; }
+        .main-btn:hover { background: #00b359; }
         .info { color: #888; font-size: 0.9rem; margin-top: 15px; }
     </style>
 </head>
@@ -44,12 +85,17 @@
 
 <div class="container">
     <h2>Metronom</h2>
-    <h1 id="bpmDisplay">120</h1>
-    <p>BPM</p>
+    
+    <div class="tempo-interface">
+        <button class="step-btn" id="minusBtn">−</button>
+        <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
+        <button class="step-btn" id="plusBtn">+</button>
+    </div>
+    <p style="margin-top: -10px; color: #aaa;">BPM (kliknij aby edytować)</p>
     
     <input type="range" id="bpmSlider" min="40" max="250" value="120">
     <br>
-    <button id="playBtn">START</button>
+    <button id="playBtn" class="main-btn">START</button>
     
     <p class="info">Adres URL aktualizuje się automatycznie.</p>
 </div>
@@ -61,36 +107,71 @@
     let timerId = null;
     
     const bpmSlider = document.getElementById('bpmSlider');
-    const bpmDisplay = document.getElementById('bpmDisplay');
+    const bpmInput = document.getElementById('bpmInput');
     const playBtn = document.getElementById('playBtn');
+    const plusBtn = document.getElementById('plusBtn');
+    const minusBtn = document.getElementById('minusBtn');
 
-    // 1. Odbieranie parametrów z adresu URL przy starcie strony
+    // Odbieranie parametrów z adresu URL przy starcie
     function getBPMFromURL() {
         const params = new URLSearchParams(window.location.search);
         const bpm = parseInt(params.get('bpm'));
         if (bpm && bpm >= 40 && bpm <= 250) {
             return bpm;
         }
-        return 120; // domyślne
+        return 120;
     }
 
-    // 2. Aktualizacja adresu URL bez przeładowania strony
+    // Aktualizacja adresu URL
     function updateURL(bpm) {
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?bpm=' + bpm;
         window.history.pushState({path: newUrl}, '', newUrl);
     }
 
-    // Ustawienie początkowej wartości
+    // Synchronizacja wszystkich elementów sterujących tempem
+    function setTempo(newBPM, updateControls = true) {
+        currentBPM = Math.max(40, Math.min(250, newBPM)); // ograniczenie 40-250
+        
+        if (updateControls) {
+            bpmSlider.value = currentBPM;
+            bpmInput.value = currentBPM;
+        }
+        updateURL(currentBPM);
+    }
+
     let currentBPM = getBPMFromURL();
-    bpmSlider.value = currentBPM;
-    bpmDisplay.textContent = currentBPM;
-    updateURL(currentBPM);
+    setTempo(currentBPM);
 
     // Reakcja na zmianę suwaka
     bpmSlider.addEventListener('input', (e) => {
-        currentBPM = e.target.value;
-        bpmDisplay.textContent = currentBPM;
-        updateURL(currentBPM);
+        setTempo(e.target.value, false);
+        bpmInput.value = currentBPM;
+    });
+
+    // Reakcja na bezpośrednie wpisywanie z klawiatury
+    bpmInput.addEventListener('input', (e) => {
+        let val = parseInt(e.target.value);
+        if (val) {
+            setTempo(val, false);
+            bpmSlider.value = currentBPM;
+        }
+    });
+
+    // Korekta wartości, jeśli użytkownik wpisze bzdury i kliknie poza pole
+    bpmInput.addEventListener('blur', (e) => {
+        let val = parseInt(e.target.value);
+        if (!val || val < 40) val = 40;
+        if (val > 250) val = 250;
+        setTempo(val);
+    });
+
+    // Przyciski Plus / Minus
+    plusBtn.addEventListener('click', () => {
+        setTempo(parseInt(currentBPM) + 1);
+    });
+
+    minusBtn.addEventListener('click', () => {
+        setTempo(parseInt(currentBPM) - 1);
     });
 
     // Silnik audio metronomu
@@ -100,9 +181,9 @@
         osc.connect(gain);
         gain.connect(audioCtx.destination);
 
-        osc.frequency.value = 1000; // częstotliwość kliku w Hz
+        osc.frequency.value = 1000; 
         gain.gain.setValueAtTime(1, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); // czas trwania kliku
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); 
 
         osc.start(time);
         osc.stop(time + 0.05);
