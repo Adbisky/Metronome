@@ -19,6 +19,8 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
+            /* Blokuje systemowe gesty i podwójne tąpnięcia powiększające ekran */
+            touch-action: none; 
         }
         
         .app-layout {
@@ -32,7 +34,7 @@
         /* LEWA STRONA: Sekcja gigantycznych przycisków krokowych */
         .left-controls {
             flex: 1;
-            margin-right: 85px; /* Rezerwacja miejsca na suwak z prawej strony */
+            margin-right: 85px; /* Miejsce na suwak */
             display: flex;
             flex-direction: column;
             height: 100%;
@@ -121,7 +123,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* PRAWA STRONA: Strefa suwaka na 100% wysokości strony */
+        /* PRAWA STRONA: Własna, dotykowa strefa suwaka (100% wysokości) */
         .right-slider-zone {
             position: absolute;
             right: 0;
@@ -130,57 +132,36 @@
             height: 100vh;
             background: #151515;
             border-left: 2px solid #121212;
-            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: pointer;
         }
 
-        /* Kluczowa zmiana: Wrapper ma szerokość równą wysokości okna i wysokość paska.
-           Obracamy cały kontener, co zachowuje prawidłowe mapowanie dotyku na komórkach.
-        */
-        .slider-wrapper {
+        /* Linia szyny suwaka */
+        .track-line {
             position: absolute;
-            top: 50%;
             left: 50%;
-            width: 100vh;
-            height: 85px;
-            transform: translate(-50%, -50%) rotate(-90deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 20px;
-        }
-
-        /* Suwak wraca do czystych ustawień poziomych przed obrotem kontenera */
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 14px;
+            top: 25px;
+            bottom: 25px;
+            width: 8px;
             background: #252525;
-            outline: none;
-            margin: 0;
-            padding: 0;
-            cursor: pointer;
-            border-radius: 7px;
+            transform: translateX(-50%);
+            border-radius: 4px;
+            pointer-events: none; /* Kliknięcia lecą do rodzica zone */
         }
 
-        /* Duży Touch-Thumb */
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+        /* Własny suwak (Thumb) pozycjonowany przez JS */
+        .custom-thumb {
+            position: absolute;
+            left: 50%;
+            top: 50%; /* Sterowane z poziomu JS */
+            width: 54px;
+            height: 54px;
             background: #00e676;
-            cursor: pointer;
+            border-radius: 14px;
+            transform: translate(-50%, -50%);
             box-shadow: 0 0 15px rgba(0,0,0,0.6);
-        }
-        input[type=range]::-moz-range-thumb {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: #00e676;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+            pointer-events: none; /* Palec jest wykrywany przez całą strefę bocznego paska */
         }
     </style>
 </head>
@@ -198,10 +179,9 @@
         </div>
     </div>
     
-    <div class="right-slider-zone">
-        <div class="slider-wrapper">
-            <input type="range" id="bpmSlider" min="40" max="250" value="120">
-        </div>
+    <div class="right-slider-zone" id="sliderZone">
+        <div class="track-line"></div>
+        <div class="custom-thumb" id="customThumb"></div>
     </div>
 
 </div>
@@ -212,16 +192,22 @@
     let nextTickTime = 0.0;
     let timerId = null;
     
-    const bpmSlider = document.getElementById('bpmSlider');
     const bpmInput = document.getElementById('bpmInput');
     const playBtn = document.getElementById('playBtn');
     const plusBtn = document.getElementById('plusBtn');
     const minusBtn = document.getElementById('minusBtn');
+    
+    const sliderZone = document.getElementById('sliderZone');
+    const customThumb = document.getElementById('customThumb');
+
+    const MIN_BPM = 40;
+    const MAX_BPM = 250;
+    let currentBPM = 120;
 
     function getBPMFromURL() {
         const params = new URLSearchParams(window.location.search);
         const bpm = parseInt(params.get('bpm'));
-        if (bpm && bpm >= 40 && bpm <= 250) {
+        if (bpm && bpm >= MIN_BPM && bpm <= MAX_BPM) {
             return bpm;
         }
         return 120;
@@ -232,40 +218,104 @@
         window.history.pushState({path: newUrl}, '', newUrl);
     }
 
-    function setTempo(newBPM, updateControls = true) {
-        currentBPM = Math.max(40, Math.min(250, newBPM));
+    // Nowa funkcja przeliczająca BPM na fizyczną pozycję suwaka na ekranie
+    function updateThumbPosition() {
+        const zoneHeight = sliderZone.clientHeight;
+        const padding = 25; // margines od góry i dołu paska
+        const availableHeight = zoneHeight - (padding * 2);
         
-        if (updateControls) {
-            bpmSlider.value = currentBPM;
-            bpmInput.value = currentBPM;
-        }
+        // Oblicz procent wartości (odwrócony, bo im wyżej palec, tym większy BPM)
+        const percent = (currentBPM - MIN_BPM) / (MAX_BPM - MIN_BPM);
+        const topPx = padding + (availableHeight * (1 - percent));
+        
+        customThumb.style.top = topPx + 'px';
+    }
+
+    // Funkcja pobierająca dotyk i wyliczająca z niego BPM
+    function handleSliderTouch(clientY) {
+        const rect = sliderZone.getBoundingClientRect();
+        const zoneHeight = rect.height;
+        const padding = 25;
+        const availableHeight = zoneHeight - (padding * 2);
+        
+        // Wyciągamy pozycję palca relatywną do paska
+        let relativeY = clientY - rect.top - padding;
+        // Ograniczenie ruchu wewnątrz bezpiecznej strefy
+        relativeY = Math.max(0, Math.min(availableHeight, relativeY));
+        
+        // Zamiana pozycji Y na procent (odwrócony)
+        const percent = 1 - (relativeY / availableHeight);
+        const calculatedBPM = Math.round(MIN_BPM + (percent * (MAX_BPM - MIN_BPM)));
+        
+        setTempo(calculatedBPM);
+    }
+
+    function setTempo(newBPM, updateControls = true) {
+        currentBPM = Math.max(MIN_BPM, Math.min(MAX_BPM, newBPM));
+        
+        bpmInput.value = currentBPM;
+        updateThumbPosition();
         updateURL(currentBPM);
     }
 
-    let currentBPM = getBPMFromURL();
-    setTempo(currentBPM);
+    // OBSŁUGA DOTYKU DLA NOWEGO SUWAKA (Płynne ciągnięcie i klikanie)
+    let isDragging = false;
 
-    // Płynna obsługa zmian
-    bpmSlider.addEventListener('input', (e) => {
-        setTempo(e.target.value, false);
-        bpmInput.value = currentBPM;
+    sliderZone.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        handleSliderTouch(e.clientY);
     });
 
+    window.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            handleSliderTouch(e.clientY);
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    // Eventy dla ekranów dotykowych w smartfonach (Touch Events)
+    sliderZone.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        handleSliderTouch(e.touches[0].clientY);
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+        if (isDragging) {
+            handleSliderTouch(e.touches[0].clientY);
+            e.preventDefault(); // Blokada scrollowania strony podczas przeciągania
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    // Inicjalizacja startowa
+    currentBPM = getBPMFromURL();
+    setTempo(currentBPM);
+    // Mały timeout, żeby przeglądarka zdążyła poprawnie zmierzyć wysokość ekranu przy starcie
+    setTimeout(updateThumbPosition, 100); 
+
+    // Obsługa okna wpisywania z klawiatury
     bpmInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
         if (val) {
             setTempo(val, false);
-            bpmSlider.value = currentBPM;
+            updateThumbPosition();
         }
     });
 
     bpmInput.addEventListener('blur', (e) => {
         let val = parseInt(e.target.value);
-        if (!val || val < 40) val = 40;
-        if (val > 250) val = 250;
+        if (!val || val < MIN_BPM) val = MIN_BPM;
+        if (val > MAX_BPM) val = MAX_BPM;
         setTempo(val);
     });
 
+    // Obsługa przycisków kroków
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
     });
@@ -274,6 +324,10 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
+    // Aktualizacja pozycji suwaka przy zmianie rozmiaru okna (np. obrót ekranu)
+    window.addEventListener('resize', updateThumbPosition);
+
+    // Silnik Audio
     function playClick(time) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -312,12 +366,6 @@
             isPlaying = true;
         }
     });
-
-    // Blokada niepożądanych gestów przeglądarki
-    document.addEventListener('touchmove', function(e) {
-        if(e.touches.length > 1) return;
-        e.preventDefault();
-    }, { passive: false });
 </script>
 
 </body>
