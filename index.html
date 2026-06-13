@@ -15,7 +15,7 @@
             margin: 0;
             padding: 0;
             display: flex;
-            height: 100vh;
+            height: 100dvh; /* POPRAWKA: Dynamiczny viewport zapobiega spychaniu środka na telefonach */
             overflow: hidden;
             position: fixed;
             width: 100%;
@@ -24,7 +24,7 @@
         .app-layout {
             display: flex;
             width: 100%;
-            height: 100vh;
+            height: 100dvh; /* POPRAWKA: Dynamiczny viewport */
             background: #1e1e1e;
             position: relative;
         }
@@ -45,7 +45,7 @@
             border: none;
             font-size: 5rem;
             font-weight: bold;
-            height: 50vh;
+            height: 50dvh; /* POPRAWKA: Dynamiczny viewport dla równego podziału */
             width: 100%;
             cursor: pointer;
             display: flex;
@@ -60,7 +60,7 @@
             box-shadow: inset 0 -2px 0 #121212; 
         }
         
-        /* POPRAWKA: Dynamiczne centrowanie znaku minus nad dolną belką systemową smartfona */
+        /* Znak minus i ikona START/STOP są teraz idealnie pośrodku dzięki dopasowaniu wysokości ekranu */
         #minusBtn {
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
@@ -76,8 +76,6 @@
             transform: translate(-50%, -50%);
             background: rgba(30, 30, 30, 0.95);
             padding: 20px 20px;
-            /* Zabezpieczenie na wypadek małych ekranów w pionie: panel uniesie się delikatnie nad strefę bezpieczną */
-            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px) * 0.3);
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             display: flex;
@@ -203,13 +201,12 @@
             right: 0;
             top: 0;
             width: 85px;
-            height: 100vh;
+            height: 100dvh; /* POPRAWKA: Dynamiczny viewport */
             background: #151515;
             border-left: 2px solid #121212;
             user-select: none;
             -webkit-user-select: none;
             cursor: pointer;
-            /* Zabezpieczenie suwaka przed "wchodzeniem" pod dolne zaokrąglenia ekranu */
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
@@ -327,7 +324,6 @@
 
     function updateThumbPosition() {
         const zoneHeight = sliderZone.clientHeight;
-        // Uwzględniamy dynamiczny padding dolny na smartfonach
         const safeBottom = parseInt(window.getComputedStyle(sliderZone).paddingBottom) || 0;
         const padding = 25; 
         const availableHeight = zoneHeight - (padding * 2) - safeBottom;
