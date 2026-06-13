@@ -61,14 +61,14 @@
         #plusBtn:active { background: #2a2a2a; color: #00e676; }
         #minusBtn:active { background: #2a2a2a; color: #ff1744; }
 
-        /* Centrowany panel nakładkowy (BPM, akcenty i START) */
+        /* Centrowany panel nakładkowy */
         .floating-display {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(30, 30, 30, 0.95);
-            padding: 20px 25px;
+            padding: 20px 20px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             display: flex;
@@ -78,7 +78,7 @@
             pointer-events: auto;
             z-index: 10;
             border: 1px solid #333;
-            width: 240px;
+            width: 250px;
         }
 
         /* Sekcja wyboru akcentu */
@@ -86,7 +86,7 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            gap: 10px;
+            gap: 8px;
         }
 
         .accent-btn {
@@ -104,12 +104,22 @@
             user-select: none;
         }
 
-        /* Wygląd aktywnego przycisku akcentu */
         .accent-btn.active {
             background: #00e676;
             color: #000;
             border-color: #00e676;
             box-shadow: 0 0 10px rgba(0, 230, 118, 0.4);
+        }
+
+        /* Kontener na input oraz lampkę obok siebie */
+        .display-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            position: relative;
+            padding-left: 35px; /* Balansuje optycznie pozycję lampki z prawej */
         }
 
         /* Pole wpisywania tempa */
@@ -121,12 +131,35 @@
             border: none;
             border-bottom: 3px dashed #444;
             text-align: center;
-            width: 160px;
+            width: 140px;
             outline: none;
             margin: 0;
         }
         .bpm-input:focus {
             border-bottom: 3px solid #00e676;
+        }
+
+        /* CIEPŁA POMARAŃCZOWA LAMPKA LED */
+        .led-indicator {
+            width: 24px;
+            height: 24px;
+            background-color: #3a2010; /* Ciemny, zgaszony pomarańcz */
+            border: 2px solid #222;
+            border-radius: 50%;
+            transition: background-color 0.04s ease, box-shadow 0.04s ease;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        /* Klasy błysku dodawane przez JS */
+        .led-indicator.flash-normal {
+            background-color: #ffaa44;
+            box-shadow: 0 0 15px #ffaa44, inset 0 1px 2px #fff;
+        }
+
+        .led-indicator.flash-accent {
+            background-color: #ff8800;
+            box-shadow: 0 0 30px #ff8800, 0 0 10px #ffaa44, inset 0 1px 2px #fff;
         }
         
         input::-webkit-outer-spin-button,
@@ -204,12 +237,17 @@
         
         <div class="floating-display">
             <div class="accent-selector">
-                <button class="accent-btn" data-beats="2">/2</button>
-                <button class="accent-btn" data-beats="3">/3</button>
-                <button class="accent-btn" data-beats="4">/4</button>
+                <button class="accent-btn active" data-beats="0">0</button>
+                <button class="accent-btn" data-beats="2">2</button>
+                <button class="accent-btn" data-beats="3">3</button>
+                <button class="accent-btn" data-beats="4">4</button>
             </div>
 
-            <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
+            <div class="display-row">
+                <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
+                <div class="led-indicator" id="ledIndicator"></div>
+            </div>
+
             <button id="playBtn" class="main-btn">START</button>
         </div>
     </div>
@@ -227,9 +265,8 @@
     let nextTickTime = 0.0;
     let timerId = null;
     
-    // Licznik uderzeń do obsługi akcentu
     let beatCounter = 0;
-    let accentBeats = 0; // 0 oznacza brak akcentu
+    let accentBeats = 0; // 0 oznacza brak akcentów (jednostajna gra na maksa)
 
     const bpmInput = document.getElementById('bpmInput');
     const playBtn = document.getElementById('playBtn');
@@ -239,6 +276,7 @@
     const sliderZone = document.getElementById('sliderZone');
     const customThumb = document.getElementById('customThumb');
     const accentBtns = document.querySelectorAll('.accent-btn');
+    const ledIndicator = document.getElementById('ledIndicator');
 
     const MIN_BPM = 40;
     const MAX_BPM = 250;
@@ -352,29 +390,46 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
-    // OBSŁUGA KLIKANIA W GUZIKI METRUM (AKCENTÓW)
+    // OBSŁUGA SELEKTORA METRUM (0, 2, 3, 4)
     accentBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const beats = parseInt(btn.getAttribute('data-beats'));
+            accentBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             
-            if (accentBeats === beats) {
-                // Ponowne kliknięcie tego samego wyłącza akcent
-                accentBeats = 0;
-                btn.classList.remove('active');
-            } else {
-                // Włączenie nowego akcentu
-                accentBtns.forEach(b => b.classList.remove('active'));
-                accentBeats = beats;
-                btn.classList.add('active');
-            }
-            // Zresetuj licznik, aby akcent wszedł idealnie od następnego kliku
-            beatCounter = 0;
+            accentBeats = parseInt(btn.getAttribute('data-beats'));
+            beatCounter = 0; // Synchronizacja od nowa
         });
     });
 
     window.addEventListener('resize', updateThumbPosition);
 
-    // MECHANIZM BRZMIENIOWY PAŁEK Z OBSŁUGĄ MAKSYMALNEGO AKCENTU
+    // FUNKCJA BŁYSKU LAMPKI Z SYNCHRONIZACJĄ CZASOWĄ AUDIO
+    function triggerVisualFlash(time, isAccent) {
+        // Obliczamy opóźnienie wyzwolenia klasy w oparciu o dokładny czas AudioContextu
+        const delayMs = Math.max(0, (time - audioCtx.currentTime) * 1000);
+        
+        setTimeout(() => {
+            // Czyszczenie poprzednich stanów
+            ledIndicator.className = 'led-indicator';
+            
+            // Wymuszenie ponownego przeliczenia stylów przeglądarki (reflow) do animacji
+            void ledIndicator.offsetWidth;
+            
+            if (isAccent) {
+                ledIndicator.classList.add('flash-accent');
+            } else {
+                ledIndicator.classList.add('flash-normal');
+            }
+            
+            // Gaszenie lampki po krótkim czasie (45ms)
+            setTimeout(() => {
+                ledIndicator.className = 'led-indicator';
+            }, 45);
+            
+        }, delayMs);
+    }
+
+    // MODUŁ DŹWIĘKOWY PAŁEK Z OBSŁUGĄ PEŁNEJ MOCY DLA TRYBU '0'
     function playClick(time, isAccent) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -392,35 +447,40 @@
 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'bandpass';
-
         osc.type = 'triangle';
 
         if (isAccent) {
-            // AKCENT (Maksymalna głośność, wyższy i ostrzejszy ton "Raz")
+            // AKCENT (Metrum 2, 3, 4 -> pierwsza miara na maksa)
             osc.frequency.setValueAtTime(1200, time);
             osc.frequency.exponentialRampToValueAtTime(550, time + 0.015);
             
             filter.frequency.value = 1600;
             filter.Q.value = 5;
 
-            gain.gain.setValueAtTime(1.0, time); // MAKSYMALNA GŁOŚNOŚĆ (100%)
+            gain.gain.setValueAtTime(1.0, time); 
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
 
-            noiseGain.gain.setValueAtTime(0.9, time); // Mocniejszy strzał szumu (atak)
+            noiseGain.gain.setValueAtTime(0.9, time); 
             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
         } else {
-            // ZWYKŁA MIARA (Cichsza i niższa)
-            osc.frequency.setValueAtTime(750, time);
-            osc.frequency.exponentialRampToValueAtTime(350, time + 0.012);
+            // ZWYKŁA MIARA (Cichsza w trybie metrum, ALBO na maksa jeśli wybrane jest '0')
+            const isZeroMode = (accentBeats === 0);
             
-            filter.frequency.value = 1000;
-            filter.Q.value = 3;
+            osc.frequency.setValueAtTime(isZeroMode ? 1200 : 750, time);
+            osc.frequency.exponentialRampToValueAtTime(isZeroMode ? 550 : 350, time + 0.012);
+            
+            filter.frequency.value = isZeroMode ? 1600 : 1000;
+            filter.Q.value = isZeroMode ? 5 : 3;
 
-            gain.gain.setValueAtTime(0.4, time); // Cichsze uderzenie poboczne
-            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+            // Jeśli tryb 0 -> maksymalna głośność (1.0), jeśli akcenty -> cichy klik (0.4)
+            const volumeLevel = isZeroMode ? 1.0 : 0.4;
+            const noiseLevel = isZeroMode ? 0.9 : 0.3;
 
-            noiseGain.gain.setValueAtTime(0.3, time);
-            noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.006);
+            gain.gain.setValueAtTime(volumeLevel, time); 
+            gain.gain.exponentialRampToValueAtTime(0.001, time + (isZeroMode ? 0.04 : 0.025));
+
+            noiseGain.gain.setValueAtTime(noiseLevel, time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, time + (isZeroMode ? 0.012 : 0.006));
         }
 
         osc.connect(gain);
@@ -439,15 +499,21 @@
 
     function scheduler() {
         while (nextTickTime < audioCtx.currentTime + 0.1) {
-            // Sprawdź, czy obecne uderzenie to akcent ("raz" w takcie)
             let isAccent = false;
+            
             if (accentBeats > 0) {
+                // Tryb metrum: akcent pojawia się co X uderzeń
                 if (beatCounter % accentBeats === 0) {
                     isAccent = true;
                 }
+            } else {
+                // Tryb '0': brak podziału metrycznego, traktuj wszystko jako mocne uderzenie wizualne
+                isAccent = true;
             }
 
-            playClick(nextTickTime, isAccent);
+            // Odpalenie dźwięku i lampki w tym samym, ściśle wyliczonym czasie
+            playClick(nextTickTime, isAccent && accentBeats > 0);
+            triggerVisualFlash(nextTickTime, isAccent);
             
             nextTickTime += 60.0 / currentBPM;
             beatCounter++;
@@ -463,8 +529,9 @@
             playBtn.textContent = 'START';
             playBtn.style.background = '#00e676';
             isPlaying = false;
+            ledIndicator.className = 'led-indicator'; // Zgaś przy stopie
         } else {
-            beatCounter = 0; // Resetuj takt przy każdym starcie
+            beatCounter = 0; 
             nextTickTime = audioCtx.currentTime + 0.05;
             scheduler();
             playBtn.textContent = 'STOP';
