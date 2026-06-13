@@ -115,24 +115,26 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
             width: 100%;
             position: relative;
-            padding-left: 35px; 
+            padding-left: 30px; 
         }
 
-        /* Pole wpisywania tempa */
+        /* ZOPTYMALIZOWANE POLE WPISYWANIA TEMPA */
         .bpm-input {
-            font-size: 4.5rem;
+            font-size: 3.8rem; /* Zmniejszone z 4.5rem dla idealnego dopasowania trzech cyfr */
             font-weight: bold;
             color: #00e676;
             background: transparent;
             border: none;
             border-bottom: 3px dashed #444;
             text-align: center;
-            width: 140px;
+            width: 135px;
+            max-width: 100%;
             outline: none;
             margin: 0;
+            letter-spacing: -1px; /* Delikatne zagęszczenie cyfr */
         }
         .bpm-input:focus {
             border-bottom: 3px solid #00e676;
@@ -459,7 +461,6 @@
         }, delayMs);
     }
 
-    // ZMODYFIKOWANA FUNKCJA AUDIO - IDEALNE PROPORCJE GŁOŚNOŚCI (100% vs 80%)
     function playClick(time, isAccentMode) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -482,31 +483,28 @@
         const forceFullPower = (accentBeats === 0);
 
         if (isAccentMode || forceFullPower) {
-            // AKCENT (Mocny "Raz" oraz cały tryb 0) -> 100% GŁOŚNOŚCI
             osc.frequency.setValueAtTime(1200, time);
             osc.frequency.exponentialRampToValueAtTime(550, time + 0.015);
             
             filter.frequency.value = 1600;
             filter.Q.value = 5;
 
-            gain.gain.setValueAtTime(1.0, time); // Głośność: 1.0 (100%)
+            gain.gain.setValueAtTime(1.0, time); 
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
 
             noiseGain.gain.setValueAtTime(0.9, time); 
             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
         } else {
-            // POZOSTAŁE UDERZENIA W TAKCIE -> 80% GŁOŚNOŚCI
             osc.frequency.setValueAtTime(750, time);
             osc.frequency.exponentialRampToValueAtTime(350, time + 0.012);
             
             filter.frequency.value = 1000;
             filter.Q.value = 3;
 
-            gain.gain.setValueAtTime(0.8, time); // Głośność: 0.8 (80%)
+            gain.gain.setValueAtTime(0.8, time); 
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
 
-            noiseGain.gain.setTimeConstantValueAtTime ? 
-                noiseGain.gain.setValueAtTime(0.7, time) : noiseGain.gain.setValueAtTime(0.7, time);
+            noiseGain.gain.setValueAtTime(0.7, time);
             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.006);
         }
 
