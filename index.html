@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Metronom URL</title>
     <style>
         body {
@@ -10,74 +10,138 @@
             text-align: center;
             background: #121212;
             color: #ffffff;
-            padding: 20px;
             margin: 0;
+            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh; /* Sztywna wysokość okna */
+            overflow: hidden; /* Blokada scrollowania ekranu */
             box-sizing: border-box;
         }
+        
         .container {
             width: 100%;
             max-width: 450px;
+            height: 100vh; /* Rozciągnięcie na pełny ekran telefonu w pionie */
             background: #1e1e1e;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            overflow: hidden; /* Aby przyciski na krańcach idealnie pasowały do zaokrągleń */
             display: flex;
             flex-direction: column;
+            justify-content: space-between; /* Rozpycha elementy do krawędzi */
         }
-        /* Wielkie, łatwe do trafienia przyciski góra/dół */
+
+        /* Wielkie przyciski dotykowe na krańcach ekranu */
         .wide-step-btn {
             background: #2a2a2a;
             color: #fff;
             border: none;
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: bold;
             width: 100%;
-            padding: 25px 0; /* Bardzo wysokie, idealne pod palec */
+            height: 15vh; /* Zawsze zajmują 15% wysokości ekranu */
             cursor: pointer;
-            transition: background 0.2s, color 0.2s;
+            transition: background 0.1s;
             outline: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-user-select: none; /* Blokada zaznaczania tekstu przy szybkim klikaniu */
+            user-select: none;
         }
         .wide-step-btn:active {
             background: #333;
             color: #00e676;
         }
+
+        /* Środkowa sekcja sterowania */
         .main-content {
-            padding: 30px 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around; /* Równomierne rozłożenie w pionie */
+            padding: 10px 20px;
+            height: 70vh;
         }
-        /* Styl dla pola wpisywania tempa */
+
+        /* Pole wpisywania tempa */
         .bpm-input {
-            font-size: 5rem;
+            font-size: 5.5rem;
             font-weight: bold;
             color: #00e676;
             background: transparent;
             border: none;
             border-bottom: 3px dashed #333;
             text-align: center;
-            width: 200px;
+            width: 220px;
             outline: none;
-            margin: 10px 0;
         }
         .bpm-input:focus {
             border-bottom: 3px solid #00e676;
         }
-        input[type=range] {
-            width: 100%;
-            margin: 25px 0;
+        /* Ukrywanie strzałek w input type=number */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* Kontener dla pionowego suwaka */
+        .slider-wrapper {
+            height: 35vh; /* Suwak zajmuje 35% wysokości całego ekranu */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Obrócenie suwaka do pionu */
+        input[type=range] {
+            -webkit-appearance: none;
+            transform: rotate(-90deg); /* Obrót o 90 stopni w lewo */
+            width: 30vh; /* Szerokość staje się wysokością po obrocie */
+            background: #333;
+            height: 8px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        /* Stylizacja thumba (suwaka) dla lepszego chwytu */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #00e676;
+            cursor: pointer;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #00e676;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Główny przycisk START/STOP */
         .main-btn {
             background: #00e676;
             color: #000;
             border: none;
-            padding: 18px 0;
-            font-size: 1.4rem;
+            padding: 15px 0;
+            font-size: 1.5rem;
             font-weight: bold;
-            border-radius: 30px;
+            border-radius: 35px;
             cursor: pointer;
-            width: 100%;
+            width: 90%;
+            max-width: 300px;
+            -webkit-user-select: none;
+            user-select: none;
         }
         .main-btn:hover { background: #00b359; }
     </style>
@@ -88,13 +152,12 @@
     <button class="wide-step-btn" id="plusBtn">+</button>
     
     <div class="main-content">
-        <h2>Metronom</h2>
-        
         <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
-        <p style="margin: 0 0 10px 0; color: #888; font-size: 1rem;">BPM</p>
         
-        <input type="range" id="bpmSlider" min="40" max="250" value="120">
-        <br>
+        <div class="slider-wrapper">
+            <input type="range" id="bpmSlider" min="40" max="250" value="120">
+        </div>
+        
         <button id="playBtn" class="main-btn">START</button>
     </div>
 
@@ -113,7 +176,6 @@
     const plusBtn = document.getElementById('plusBtn');
     const minusBtn = document.getElementById('minusBtn');
 
-    // Odbieranie parametrów z adresu URL przy starcie
     function getBPMFromURL() {
         const params = new URLSearchParams(window.location.search);
         const bpm = parseInt(params.get('bpm'));
@@ -123,13 +185,11 @@
         return 120;
     }
 
-    // Aktualizacja adresu URL
     function updateURL(bpm) {
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?bpm=' + bpm;
         window.history.pushState({path: newUrl}, '', newUrl);
     }
 
-    // Synchronizacja wszystkich elementów sterujących tempem
     function setTempo(newBPM, updateControls = true) {
         currentBPM = Math.max(40, Math.min(250, newBPM));
         
@@ -143,13 +203,13 @@
     let currentBPM = getBPMFromURL();
     setTempo(currentBPM);
 
-    // Reakcja na zmianę suwaka
+    // Ponieważ suwak jest obrócony o -90 stopni:
+    // ruch w górę fizycznie zwiększa wartość, ruch w dół zmniejsza.
     bpmSlider.addEventListener('input', (e) => {
         setTempo(e.target.value, false);
         bpmInput.value = currentBPM;
     });
 
-    // Reakcja na bezpośrednie wpisywanie z klawiatury
     bpmInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
         if (val) {
@@ -158,7 +218,6 @@
         }
     });
 
-    // Korekta wartości przy wyjściu z pola wpisywania
     bpmInput.addEventListener('blur', (e) => {
         let val = parseInt(e.target.value);
         if (!val || val < 40) val = 40;
@@ -166,7 +225,6 @@
         setTempo(val);
     });
 
-    // Przyciski Plus / Minus na krańcach ekranu
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
     });
@@ -175,7 +233,6 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
-    // Silnik audio metronomu
     function playClick(time) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
