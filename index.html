@@ -31,7 +31,7 @@
 
         /* LEWA STRONA: Sekcja gigantycznych przycisków krokowych */
         .left-controls {
-            flex: 1; /* Automatycznie wypełnia obszar aż do paska suwaka */
+            flex: 1;
             margin-right: 85px; /* Rezerwacja miejsca na suwak z prawej strony */
             display: flex;
             flex-direction: column;
@@ -45,7 +45,7 @@
             border: none;
             font-size: 5rem;
             font-weight: bold;
-            height: 50vh; /* Idealne 50% wysokości dla każdego przycisku */
+            height: 50vh;
             width: 100%;
             cursor: pointer;
             display: flex;
@@ -96,7 +96,6 @@
             border-bottom: 3px solid #00e676;
         }
         
-        /* Ukrywanie fabrycznych strzałek inputów */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -122,7 +121,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* PRAWA STRONA: Strefa suwaka o wymuszonym pełnym wymiarze */
+        /* PRAWA STRONA: Strefa suwaka na 100% wysokości strony */
         .right-slider-zone {
             position: absolute;
             right: 0;
@@ -131,24 +130,26 @@
             height: 100vh;
             background: #151515;
             border-left: 2px solid #121212;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
         }
 
-        /* Wrapper wymusza stałe obrócone pozycjonowanie na całą wysokość ekranu */
+        /* Kluczowa zmiana: Wrapper ma szerokość równą wysokości okna i wysokość paska.
+           Obracamy cały kontener, co zachowuje prawidłowe mapowanie dotyku na komórkach.
+        */
         .slider-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
             width: 100vh;
             height: 85px;
-            transform: rotate(-90deg);
+            transform: translate(-50%, -50%) rotate(-90deg);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: absolute;
+            padding: 0 20px;
         }
 
-        /* Sam suwak rozciągnięty na 100% dostępnej przestrzeni */
+        /* Suwak wraca do czystych ustawień poziomych przed obrotem kontenera */
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
@@ -158,9 +159,10 @@
             margin: 0;
             padding: 0;
             cursor: pointer;
+            border-radius: 7px;
         }
 
-        /* Duży, kwadratowy Touch-Thumb z zaokrąglonymi rogami */
+        /* Duży Touch-Thumb */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -243,13 +245,12 @@
     let currentBPM = getBPMFromURL();
     setTempo(currentBPM);
 
-    // Obsługa suwaka pionowego (góra-dół)
+    // Płynna obsługa zmian
     bpmSlider.addEventListener('input', (e) => {
         setTempo(e.target.value, false);
         bpmInput.value = currentBPM;
     });
 
-    // Obsługa wpisywania ręcznego
     bpmInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
         if (val) {
@@ -265,7 +266,6 @@
         setTempo(val);
     });
 
-    // Obsługa przycisków
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
     });
@@ -274,7 +274,6 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
-    // Wygenerowanie czystego kliku dźwiękowego za pomocą Web Audio API
     function playClick(time) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -314,7 +313,7 @@
         }
     });
 
-    // Blokada gestów systemowych (np. przeciąganie w celu odświeżenia strony)
+    // Blokada niepożądanych gestów przeglądarki
     document.addEventListener('touchmove', function(e) {
         if(e.touches.length > 1) return;
         e.preventDefault();
