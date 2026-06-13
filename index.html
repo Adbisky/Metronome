@@ -19,7 +19,6 @@
             overflow: hidden;
             position: fixed;
             width: 100%;
-            /* Blokuje systemowe gesty i podwójne tąpnięcia powiększające ekran */
             touch-action: none; 
         }
         
@@ -34,7 +33,7 @@
         /* LEWA STRONA: Sekcja gigantycznych przycisków krokowych */
         .left-controls {
             flex: 1;
-            margin-right: 85px; /* Miejsce na suwak */
+            margin-right: 85px; 
             display: flex;
             flex-direction: column;
             height: 100%;
@@ -123,7 +122,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* PRAWA STRONA: Własna, dotykowa strefa suwaka (100% wysokości) */
+        /* PRAWA STRONA: Dotykowa strefa suwaka (100% wysokości) */
         .right-slider-zone {
             position: absolute;
             right: 0;
@@ -137,7 +136,6 @@
             cursor: pointer;
         }
 
-        /* Linia szyny suwaka */
         .track-line {
             position: absolute;
             left: 50%;
@@ -147,21 +145,20 @@
             background: #252525;
             transform: translateX(-50%);
             border-radius: 4px;
-            pointer-events: none; /* Kliknięcia lecą do rodzica zone */
+            pointer-events: none; 
         }
 
-        /* Własny suwak (Thumb) pozycjonowany przez JS */
         .custom-thumb {
             position: absolute;
             left: 50%;
-            top: 50%; /* Sterowane z poziomu JS */
+            top: 50%; 
             width: 54px;
             height: 54px;
             background: #00e676;
             border-radius: 14px;
             transform: translate(-50%, -50%);
             box-shadow: 0 0 15px rgba(0,0,0,0.6);
-            pointer-events: none; /* Palec jest wykrywany przez całą strefę bocznego paska */
+            pointer-events: none; 
         }
     </style>
 </head>
@@ -218,32 +215,26 @@
         window.history.pushState({path: newUrl}, '', newUrl);
     }
 
-    // Nowa funkcja przeliczająca BPM na fizyczną pozycję suwaka na ekranie
     function updateThumbPosition() {
         const zoneHeight = sliderZone.clientHeight;
-        const padding = 25; // margines od góry i dołu paska
+        const padding = 25; 
         const availableHeight = zoneHeight - (padding * 2);
         
-        // Oblicz procent wartości (odwrócony, bo im wyżej palec, tym większy BPM)
         const percent = (currentBPM - MIN_BPM) / (MAX_BPM - MIN_BPM);
         const topPx = padding + (availableHeight * (1 - percent));
         
         customThumb.style.top = topPx + 'px';
     }
 
-    // Funkcja pobierająca dotyk i wyliczająca z niego BPM
     function handleSliderTouch(clientY) {
         const rect = sliderZone.getBoundingClientRect();
         const zoneHeight = rect.height;
         const padding = 25;
         const availableHeight = zoneHeight - (padding * 2);
         
-        // Wyciągamy pozycję palca relatywną do paska
         let relativeY = clientY - rect.top - padding;
-        // Ograniczenie ruchu wewnątrz bezpiecznej strefy
         relativeY = Math.max(0, Math.min(availableHeight, relativeY));
         
-        // Zamiana pozycji Y na procent (odwrócony)
         const percent = 1 - (relativeY / availableHeight);
         const calculatedBPM = Math.round(MIN_BPM + (percent * (MAX_BPM - MIN_BPM)));
         
@@ -258,7 +249,6 @@
         updateURL(currentBPM);
     }
 
-    // OBSŁUGA DOTYKU DLA NOWEGO SUWAKA (Płynne ciągnięcie i klikanie)
     let isDragging = false;
 
     sliderZone.addEventListener('mousedown', (e) => {
@@ -276,7 +266,6 @@
         isDragging = false;
     });
 
-    // Eventy dla ekranów dotykowych w smartfonach (Touch Events)
     sliderZone.addEventListener('touchstart', (e) => {
         isDragging = true;
         handleSliderTouch(e.touches[0].clientY);
@@ -285,7 +274,7 @@
     window.addEventListener('touchmove', (e) => {
         if (isDragging) {
             handleSliderTouch(e.touches[0].clientY);
-            e.preventDefault(); // Blokada scrollowania strony podczas przeciągania
+            e.preventDefault(); 
         }
     }, { passive: false });
 
@@ -293,13 +282,10 @@
         isDragging = false;
     });
 
-    // Inicjalizacja startowa
     currentBPM = getBPMFromURL();
     setTempo(currentBPM);
-    // Mały timeout, żeby przeglądarka zdążyła poprawnie zmierzyć wysokość ekranu przy starcie
     setTimeout(updateThumbPosition, 100); 
 
-    // Obsługa okna wpisywania z klawiatury
     bpmInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
         if (val) {
@@ -315,7 +301,6 @@
         setTempo(val);
     });
 
-    // Obsługa przycisków kroków
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
     });
@@ -324,22 +309,61 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
-    // Aktualizacja pozycji suwaka przy zmianie rozmiaru okna (np. obrót ekranu)
     window.addEventListener('resize', updateThumbPosition);
 
-    // Silnik Audio
+    // NOWY MODUŁ BRZMIENIOWY: Realistyczne uderzenie pałek (Drumsticks / Sidestick)
     function playClick(time) {
+        // Główny rezonans uderzenia drewna (wyższa, skupiona częstotliwość)
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
+        
+        // Dodatkowy szum imitujący "suchy" trzask i uderzenie plastiku/drewna o obręcz
+        const noiseNode = audioCtx.createBufferSource();
+        const noiseGain = audioCtx.createGain();
+        
+        // Tworzenie bufora z szumem (krótki impuls o długości 10ms)
+        const bufferSize = audioCtx.sampleRate * 0.01;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        noiseNode.buffer = buffer;
+
+        // Filtrowanie szumu, aby wyciągnąć "klik" średnich tonów
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1200;
+        filter.Q.value = 4;
+
+        // Konfiguracja rezonatora
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(850, time);
+        // Szybki spadek częstotliwości w dół potęguje wrażenie realizmu uderzenia
+        osc.frequency.exponentialRampToValueAtTime(400, time + 0.012);
+
+        // Obwiednia głośności dla ciała uderzenia (bardzo krótki decay)
+        gain.gain.setValueAtTime(0.8, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+
+        // Obwiednia głośności dla szumu / trzasku (błyskawiczny strzał)
+        noiseGain.gain.setValueAtTime(0.6, time);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.008);
+
+        // Połączenia modułów
         osc.connect(gain);
         gain.connect(audioCtx.destination);
 
-        osc.frequency.value = 1000; 
-        gain.gain.setValueAtTime(1, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); 
+        noiseNode.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
 
+        // Start i Stop w tym samym czasie
         osc.start(time);
-        osc.stop(time + 0.05);
+        osc.stop(time + 0.03);
+        
+        noiseNode.start(time);
+        noiseNode.stop(time + 0.008);
     }
 
     function scheduler() {
