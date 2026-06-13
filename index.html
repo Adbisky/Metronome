@@ -10,83 +10,84 @@
         }
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             background: #121212;
             color: #ffffff;
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
-            align-items: center;
             height: 100vh;
             overflow: hidden;
-            position: fixed; /* Zapobiega przypadkowemu przeciąganiu strony (overscroll) */
+            position: fixed;
             width: 100%;
         }
         
-        .container {
+        .app-layout {
+            display: flex;
             width: 100%;
-            max-width: 450px;
             height: 100vh;
             background: #1e1e1e;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* Guziki góra/dół - dopasowane rozmiarowo do kciuka, bezpieczna wysokość */
-        .wide-step-btn {
-            background: #2a2a2a;
-            color: #fff;
+        /* LEWA STRONA: Sekcja gigantycznych przycisków krokowych */
+        .left-controls {
+            flex: 1; /* Wypełnia całą szerokość aż do suwaka */
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        .huge-btn {
+            background: #222222;
+            color: #ffffff;
             border: none;
-            font-size: 2.5rem;
+            font-size: 5rem;
             font-weight: bold;
+            height: 50vh; /* Każdy przycisk zajmuje dokładnie połowę wysokości ekranu */
             width: 100%;
-            height: 60px; /* Stała wysokość, która nie wypycha dołu */
-            flex-shrink: 0; /* Zakaz kurczenia przycisków */
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             -webkit-user-select: none;
             user-select: none;
+            outline: none;
         }
-        .wide-step-btn:active {
-            background: #333;
-            color: #00e676;
-        }
+        
+        /* Przycisk PLUS na górze, MINUS na dole */
+        #plusBtn { border-bottom: 2px solid #121212; }
+        #plusBtn:active { background: #2a2a2a; color: #00e676; }
+        #minusBtn:active { background: #2a2a2a; color: #ff1744; }
 
-        /* Środkowa sekcja robocza - podział na lewą i prawą stronę */
-        .main-content {
-            flex: 1; /* Zajmuje całą dostępną przestrzeń między guzikami */
-            display: flex;
-            flex-direction: row; /* Układ obok siebie: lewa (tekst/start) | prawa (suwak) */
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 20px;
-            overflow: hidden;
-        }
-
-        /* Lewa kolumna: BPM oraz przycisk START/STOP */
-        .left-column {
-            flex: 1;
+        /* Centrowany panel nakładkowy na lewej sekcji (BPM i START) */
+        .floating-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 30, 30, 0.95);
+            padding: 20px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 30px;
-            height: 100%;
+            gap: 15px;
+            pointer-events: auto; /* Pozwala klikać wewnątrz nakładki */
+            z-index: 10;
+            border: 1px solid #333;
         }
 
         /* Pole wpisywania tempa */
         .bpm-input {
-            font-size: 5rem;
+            font-size: 4.5rem;
             font-weight: bold;
             color: #00e676;
             background: transparent;
             border: none;
-            border-bottom: 3px dashed #333;
+            border-bottom: 3px dashed #444;
             text-align: center;
-            width: 180px;
+            width: 160px;
             outline: none;
             margin: 0;
         }
@@ -104,98 +105,98 @@
             -moz-appearance: textfield;
         }
 
-        /* Prawa kolumna: Miejsce na pionowy suwak */
-        .right-column {
-            width: 70px;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        /* Kontener pozycjonujący i obracający suwak */
-        .slider-wrapper {
-            position: absolute;
-            width: 100%;
-            height: 95%; /* Dokładnie 95% wysokości środkowej sekcji */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Pionowy fader dostosowany do wysokości kontenera wrapper */
-        input[type=range] {
-            -webkit-appearance: none;
-            transform: rotate(-90deg);
-            /* Szerokość staje się wysokością po obrocie. Pobiera ją z wysokości rodzica */
-            width: calc(100vh - 120px - 40px); 
-            background: #333;
-            height: 10px;
-            border-radius: 5px;
-            outline: none;
-            margin: 0;
-        }
-
-        /* Suwak (Thumb) przystosowany do ekranów dotykowych */
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #00e676;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-        input[type=range]::-moz-range-thumb {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #00e676;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        }
-
         /* Główny przycisk START/STOP */
         .main-btn {
             background: #00e676;
             color: #000;
             border: none;
-            padding: 18px 0;
-            font-size: 1.4rem;
+            padding: 12px 35px;
+            font-size: 1.2rem;
             font-weight: bold;
-            border-radius: 35px;
+            border-radius: 25px;
             cursor: pointer;
             width: 100%;
-            max-width: 200px;
             -webkit-user-select: none;
             user-select: none;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .main-btn:hover { background: #00b359; }
+
+        /* PRAWA STRONA: Sekcja suwaka na 100% wysokości */
+        .right-slider-zone {
+            width: 85px; /* Szerokość strefy suwaka */
+            height: 100vh;
+            background: #151515;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border-left: 2px solid #121212;
+            flex-shrink: 0;
+        }
+
+        .slider-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Suwak obrócony pionowo na pełne 100% wysokości okna */
+        input[type=range] {
+            -webkit-appearance: none;
+            transform: rotate(-90deg);
+            width: 100vh; /* Dokładnie wysokość całego ekranu */
+            background: #252525;
+            height: 14px;
+            border-radius: 0;
+            outline: none;
+            margin: 0;
+        }
+
+        /* Ogromny, łatwy do chwycenia Touch-Thumb */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px; /* Lekko zaokrąglony kwadrat dla pewniejszego chwytu */
+            background: #00e676;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #00e676;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <button class="wide-step-btn" id="plusBtn">+</button>
+<div class="app-layout">
     
-    <div class="main-content">
-        <div class="left-column">
+    <div class="left-controls">
+        <button class="huge-btn" id="plusBtn">+</button>
+        <button class="huge-btn" id="minusBtn">−</button>
+        
+        <div class="floating-display">
             <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
             <button id="playBtn" class="main-btn">START</button>
         </div>
-        
-        <div class="right-column">
-            <div class="slider-wrapper">
-                <input type="range" id="bpmSlider" min="40" max="250" value="120">
-            </div>
+    </div>
+    
+    <div class="right-slider-zone">
+        <div class="slider-wrapper">
+            <input type="range" id="bpmSlider" min="40" max="250" value="120">
         </div>
     </div>
 
-    <button class="wide-step-btn" id="minusBtn">−</button>
 </div>
 
 <script>
@@ -237,13 +238,13 @@
     let currentBPM = getBPMFromURL();
     setTempo(currentBPM);
 
-    // Obsługa wejścia suwaka
+    // Suwak pionowy
     bpmSlider.addEventListener('input', (e) => {
         setTempo(e.target.value, false);
         bpmInput.value = currentBPM;
     });
 
-    // Obsługa bezpośredniego wpisywania z klawiatury
+    // Klawiatura
     bpmInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
         if (val) {
@@ -259,7 +260,7 @@
         setTempo(val);
     });
 
-    // Obsługa wielkich przycisków kroków
+    // Przyciski krokowe
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
     });
@@ -268,7 +269,7 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
-    // Silnik dźwiękowy Web Audio API
+    // Silnik audio
     function playClick(time) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -308,7 +309,7 @@
         }
     });
 
-    // Blokowanie gestów "pull-to-refresh" na urządzeniach mobilnych
+    // Blokada natywnych gestów przeglądarki mobilnej
     document.addEventListener('touchmove', function(e) {
         if(e.touches.length > 1) return;
         e.preventDefault();
