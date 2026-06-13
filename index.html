@@ -26,11 +26,13 @@
             width: 100%;
             height: 100vh;
             background: #1e1e1e;
+            position: relative;
         }
 
         /* LEWA STRONA: Sekcja gigantycznych przycisków krokowych */
         .left-controls {
-            flex: 1; /* Wypełnia całą szerokość aż do suwaka */
+            flex: 1; /* Automatycznie wypełnia obszar aż do paska suwaka */
+            margin-right: 85px; /* Rezerwacja miejsca na suwak z prawej strony */
             display: flex;
             flex-direction: column;
             height: 100%;
@@ -43,7 +45,7 @@
             border: none;
             font-size: 5rem;
             font-weight: bold;
-            height: 50vh; /* Każdy przycisk zajmuje dokładnie połowę wysokości ekranu */
+            height: 50vh; /* Idealne 50% wysokości dla każdego przycisku */
             width: 100%;
             cursor: pointer;
             display: flex;
@@ -54,12 +56,11 @@
             outline: none;
         }
         
-        /* Przycisk PLUS na górze, MINUS na dole */
         #plusBtn { border-bottom: 2px solid #121212; }
         #plusBtn:active { background: #2a2a2a; color: #00e676; }
         #minusBtn:active { background: #2a2a2a; color: #ff1744; }
 
-        /* Centrowany panel nakładkowy na lewej sekcji (BPM i START) */
+        /* Centrowany panel nakładkowy (BPM i START) */
         .floating-display {
             position: absolute;
             top: 50%;
@@ -73,7 +74,7 @@
             flex-direction: column;
             align-items: center;
             gap: 15px;
-            pointer-events: auto; /* Pozwala klikać wewnątrz nakładki */
+            pointer-events: auto;
             z-index: 10;
             border: 1px solid #333;
         }
@@ -121,47 +122,51 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        /* PRAWA STRONA: Sekcja suwaka na 100% wysokości */
+        /* PRAWA STRONA: Strefa suwaka o wymuszonym pełnym wymiarze */
         .right-slider-zone {
-            width: 85px; /* Szerokość strefy suwaka */
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 85px;
             height: 100vh;
             background: #151515;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
             border-left: 2px solid #121212;
-            flex-shrink: 0;
-        }
-
-        .slider-wrapper {
-            position: absolute;
-            width: 100%;
-            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
 
-        /* Suwak obrócony pionowo na pełne 100% wysokości okna */
+        /* Wrapper wymusza stałe obrócone pozycjonowanie na całą wysokość ekranu */
+        .slider-wrapper {
+            width: 100vh;
+            height: 85px;
+            transform: rotate(-90deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+        }
+
+        /* Sam suwak rozciągnięty na 100% dostępnej przestrzeni */
         input[type=range] {
             -webkit-appearance: none;
-            transform: rotate(-90deg);
-            width: 100vh; /* Dokładnie wysokość całego ekranu */
-            background: #252525;
+            width: 100%;
             height: 14px;
-            border-radius: 0;
+            background: #252525;
             outline: none;
             margin: 0;
+            padding: 0;
+            cursor: pointer;
         }
 
-        /* Ogromny, łatwy do chwycenia Touch-Thumb */
+        /* Duży, kwadratowy Touch-Thumb z zaokrąglonymi rogami */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 50px;
             height: 50px;
-            border-radius: 12px; /* Lekko zaokrąglony kwadrat dla pewniejszego chwytu */
+            border-radius: 12px;
             background: #00e676;
             cursor: pointer;
             box-shadow: 0 0 15px rgba(0,0,0,0.6);
@@ -238,13 +243,13 @@
     let currentBPM = getBPMFromURL();
     setTempo(currentBPM);
 
-    // Suwak pionowy
+    // Obsługa suwaka pionowego (góra-dół)
     bpmSlider.addEventListener('input', (e) => {
         setTempo(e.target.value, false);
         bpmInput.value = currentBPM;
     });
 
-    // Klawiatura
+    // Obsługa wpisywania ręcznego
     bpmInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
         if (val) {
@@ -260,7 +265,7 @@
         setTempo(val);
     });
 
-    // Przyciski krokowe
+    // Obsługa przycisków
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
     });
@@ -269,7 +274,7 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
-    // Silnik audio
+    // Wygenerowanie czystego kliku dźwiękowego za pomocą Web Audio API
     function playClick(time) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -309,7 +314,7 @@
         }
     });
 
-    // Blokada natywnych gestów przeglądarki mobilnej
+    // Blokada gestów systemowych (np. przeciąganie w celu odświeżenia strony)
     document.addEventListener('touchmove', function(e) {
         if(e.touches.length > 1) return;
         e.preventDefault();
