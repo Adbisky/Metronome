@@ -337,10 +337,13 @@
         setTempo(calculatedBPM);
     }
 
-    function setTempo(newBPM, updateControls = true) {
+    // setTempo teraz tylko wizualnie aktualizuje suwak i link, nie czyści inputu w trakcie pisania
+    function setTempo(newBPM, updateInputElement = true) {
         currentBPM = Math.max(MIN_BPM, Math.min(MAX_BPM, newBPM));
         
-        bpmInput.value = currentBPM;
+        if (updateInputElement) {
+            bpmInput.value = currentBPM;
+        }
         updateThumbPosition();
         updateURL(currentBPM, accentBeats);
     }
@@ -382,20 +385,15 @@
     setTempo(currentBPM);
     setTimeout(updateThumbPosition, 100); 
 
-    bpmInput.addEventListener('input', (e) => {
-        let val = parseInt(e.target.value);
-        if (val) {
-            setTempo(val, false);
-            updateThumbPosition();
-        }
-    });
-
-    bpmInput.addEventListener('blur', (e) => {
-        let val = parseInt(e.target.value);
+    // POPRAWKA: Usunąłem zdarzenie 'input'. Zmiana zatwierdza się dopiero po zakończeniu edycji.
+    function commitBPM() {
+        let val = parseInt(bpmInput.value);
         if (!val || val < MIN_BPM) val = MIN_BPM;
         if (val > MAX_BPM) val = MAX_BPM;
         setTempo(val);
-    });
+    }
+
+    bpmInput.addEventListener('blur', commitBPM);
 
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
@@ -414,17 +412,18 @@
         });
     });
 
-    // NOWA OBSŁUGA KLAWIATURY KOMPUTEROWEJ
+    // OBSŁUGA KLAWIATURY Z UNIKANIEM INTERFERENCJI PODCZAS WPISYWANIA W INPUT
     window.addEventListener('keydown', (e) => {
-        // Jeśli aktualnie piszemy w polu BPM, pozwól normalnie działać cyfrom i Enterowi
         if (document.activeElement === bpmInput) {
             if (e.key === 'Enter') {
-                bpmInput.blur();
+                e.preventDefault();
+                commitBPM();
+                bpmInput.blur(); // Wyjście z pola tekstowego po Enterze
             }
-            return; 
+            return; // Pozwól na normalne wpisywanie cyfr bez wyzwalania skrótów globalnych
         }
 
-        // Obsługa skrótów klawiszowych globalnie
+        // Globalne skróty klawiszowe (gdy pole tekstowe nie jest zaznaczone)
         if (e.key === ' ' || e.code === 'Space') {
             e.preventDefault();
             playBtn.click();
@@ -565,10 +564,8 @@
         }
     });
 
-    // POPRAWKA DLA MOBILNYCH BEZ BLOKOWANIA DESKTOPU
     document.addEventListener('touchmove', function(e) {
         if(e.touches.length > 1) return;
-        // Blokujemy domyślne przewijanie tylko poza obszarami tekstowymi/guzikami
         if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
             e.preventDefault();
         }
