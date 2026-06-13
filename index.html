@@ -236,10 +236,11 @@
         
         <div class="floating-display">
             <div class="accent-selector">
-                <button class="accent-btn" data-beats="0">0</button>
-                <button class="accent-btn" data-beats="2">2</button>
-                <button class="accent-btn" data-beats="3">3</button>
-                <button class="accent-btn active" data-beats="4">4</button> </div>
+                <button class="accent-btn" data-beats="0" id="btn-0">0</button>
+                <button class="accent-btn" data-beats="2" id="btn-2">2</button>
+                <button class="accent-btn" data-beats="3" id="btn-3">3</button>
+                <button class="accent-btn" data-beats="4" id="btn-4">4</button>
+            </div>
 
             <div class="display-row">
                 <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
@@ -264,7 +265,7 @@
     let timerId = null;
     
     let beatCounter = 0;
-    let accentBeats = 4; // Domyślnie ustawione na akcent co 4 (miara 4/4)
+    let accentBeats = 4; // Wartość rezerwowa, nadpisywana przez stan z adresu URL
 
     const bpmInput = document.getElementById('bpmInput');
     const playBtn = document.getElementById('playBtn');
@@ -280,17 +281,35 @@
     const MAX_BPM = 250;
     let currentBPM = 120;
 
-    function getBPMFromURL() {
+    // NOWA FUNKCJA: Pobiera komplet danych z adresu (BPM i Akcent)
+    function loadStateFromURL() {
         const params = new URLSearchParams(window.location.search);
+        
+        // 1. Odczyt BPM
         const bpm = parseInt(params.get('bpm'));
         if (bpm && bpm >= MIN_BPM && bpm <= MAX_BPM) {
-            return bpm;
+            currentBPM = bpm;
+        } else {
+            currentBPM = 120; // Domyślne
         }
-        return 120;
+
+        // 2. Odczyt wybranego akcentu
+        const beats = params.get('beats');
+        if (beats !== null && ['0', '2', '3', '4'].includes(beats)) {
+            accentBeats = parseInt(beats);
+        } else {
+            accentBeats = 4; // Domyślne
+        }
+
+        // Aktualizacja interfejsu wizualnego guzików na podstawie odczytu
+        accentBtns.forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById(`btn-${accentBeats}`);
+        if (activeBtn) activeBtn.classList.add('active');
     }
 
-    function updateURL(bpm) {
-        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?bpm=' + bpm;
+    // ROZBUDOWANA FUNKCJA: Zapisuje w adresie zarazem tempo i akcent
+    function updateURL(bpm, beats) {
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?bpm=${bpm}&beats=${beats}`;
         window.history.pushState({path: newUrl}, '', newUrl);
     }
 
@@ -325,7 +344,7 @@
         
         bpmInput.value = currentBPM;
         updateThumbPosition();
-        updateURL(currentBPM);
+        updateURL(currentBPM, accentBeats);
     }
 
     let isDragging = false;
@@ -361,7 +380,8 @@
         isDragging = false;
     });
 
-    currentBPM = getBPMFromURL();
+    // INICJALIZACJA WYSTARTOWANIA Z LINKU
+    loadStateFromURL();
     setTempo(currentBPM);
     setTimeout(updateThumbPosition, 100); 
 
@@ -388,6 +408,7 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
+    // OBSŁUGA SELEKTORA METRUM Z NATYCHMIASTOWYM ZAPISEM DO URL
     accentBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             accentBtns.forEach(b => b.classList.remove('active'));
@@ -395,6 +416,9 @@
             
             accentBeats = parseInt(btn.getAttribute('data-beats'));
             beatCounter = 0; 
+            
+            // Aktualizacja parametrów adresu przy każdej zmianie metrum
+            updateURL(currentBPM, accentBeats);
         });
     });
 
@@ -478,7 +502,7 @@
         osc.stop(time + 0.04);
         
         noiseNode.start(time);
-        noiseNode.stop(time + 0.012);
+        noiseNode.stop(time + 0.008);
     }
 
     function scheduler() {
