@@ -119,7 +119,7 @@
             gap: 15px;
             width: 100%;
             position: relative;
-            padding-left: 35px; /* Balansuje optycznie pozycję lampki z prawej */
+            padding-left: 35px; 
         }
 
         /* Pole wpisywania tempa */
@@ -143,7 +143,7 @@
         .led-indicator {
             width: 24px;
             height: 24px;
-            background-color: #3a2010; /* Ciemny, zgaszony pomarańcz */
+            background-color: #3a2010; 
             border: 2px solid #222;
             border-radius: 50%;
             transition: background-color 0.04s ease, box-shadow 0.04s ease;
@@ -151,7 +151,6 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
         }
 
-        /* Klasy błysku dodawane przez JS */
         .led-indicator.flash-normal {
             background-color: #ffaa44;
             box-shadow: 0 0 15px #ffaa44, inset 0 1px 2px #fff;
@@ -266,7 +265,7 @@
     let timerId = null;
     
     let beatCounter = 0;
-    let accentBeats = 0; // 0 oznacza brak akcentów (jednostajna gra na maksa)
+    let accentBeats = 0; 
 
     const bpmInput = document.getElementById('bpmInput');
     const playBtn = document.getElementById('playBtn');
@@ -390,29 +389,23 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
-    // OBSŁUGA SELEKTORA METRUM (0, 2, 3, 4)
     accentBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             accentBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
             accentBeats = parseInt(btn.getAttribute('data-beats'));
-            beatCounter = 0; // Synchronizacja od nowa
+            beatCounter = 0; 
         });
     });
 
     window.addEventListener('resize', updateThumbPosition);
 
-    // FUNKCJA BŁYSKU LAMPKI Z SYNCHRONIZACJĄ CZASOWĄ AUDIO
     function triggerVisualFlash(time, isAccent) {
-        // Obliczamy opóźnienie wyzwolenia klasy w oparciu o dokładny czas AudioContextu
         const delayMs = Math.max(0, (time - audioCtx.currentTime) * 1000);
         
         setTimeout(() => {
-            // Czyszczenie poprzednich stanów
             ledIndicator.className = 'led-indicator';
-            
-            // Wymuszenie ponownego przeliczenia stylów przeglądarki (reflow) do animacji
             void ledIndicator.offsetWidth;
             
             if (isAccent) {
@@ -421,7 +414,6 @@
                 ledIndicator.classList.add('flash-normal');
             }
             
-            // Gaszenie lampki po krótkim czasie (45ms)
             setTimeout(() => {
                 ledIndicator.className = 'led-indicator';
             }, 45);
@@ -429,8 +421,8 @@
         }, delayMs);
     }
 
-    // MODUŁ DŹWIĘKOWY PAŁEK Z OBSŁUGĄ PEŁNEJ MOCY DLA TRYBU '0'
-    function playClick(time, isAccent) {
+    // NAPRAWIONY MODUŁ AUDIO: Czysta i stabilna głośność bez wahań pulsu
+    function playClick(time, isAccentMode) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         
@@ -449,38 +441,35 @@
         filter.type = 'bandpass';
         osc.type = 'triangle';
 
-        if (isAccent) {
-            // AKCENT (Metrum 2, 3, 4 -> pierwsza miara na maksa)
+        // KLUCZOWA POPRAWKA: Jeśli tryb to 0, KAŻDY klik dostaje parametry mocnego akcentu
+        const forceFullPower = (accentBeats === 0);
+
+        if (isAccentMode || forceFullPower) {
+            // POTĘŻNE UDERZENIE (Dla akcentu "Raz" LUB całego trybu jednostajnego "0")
             osc.frequency.setValueAtTime(1200, time);
             osc.frequency.exponentialRampToValueAtTime(550, time + 0.015);
             
             filter.frequency.value = 1600;
             filter.Q.value = 5;
 
-            gain.gain.setValueAtTime(1.0, time); 
+            gain.gain.setValueAtTime(1.0, time); // 100% Mocy audio
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
 
             noiseGain.gain.setValueAtTime(0.9, time); 
             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
         } else {
-            // ZWYKŁA MIARA (Cichsza w trybie metrum, ALBO na maksa jeśli wybrane jest '0')
-            const isZeroMode = (accentBeats === 0);
+            // ZWYKŁA MIARA (Tylko w trybach podziału 2, 3, 4 dla uderzeń pobocznych)
+            osc.frequency.setValueAtTime(750, time);
+            osc.frequency.exponentialRampToValueAtTime(350, time + 0.012);
             
-            osc.frequency.setValueAtTime(isZeroMode ? 1200 : 750, time);
-            osc.frequency.exponentialRampToValueAtTime(isZeroMode ? 550 : 350, time + 0.012);
-            
-            filter.frequency.value = isZeroMode ? 1600 : 1000;
-            filter.Q.value = isZeroMode ? 5 : 3;
+            filter.frequency.value = 1000;
+            filter.Q.value = 3;
 
-            // Jeśli tryb 0 -> maksymalna głośność (1.0), jeśli akcenty -> cichy klik (0.4)
-            const volumeLevel = isZeroMode ? 1.0 : 0.4;
-            const noiseLevel = isZeroMode ? 0.9 : 0.3;
+            gain.gain.setValueAtTime(0.4, time); 
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
 
-            gain.gain.setValueAtTime(volumeLevel, time); 
-            gain.gain.exponentialRampToValueAtTime(0.001, time + (isZeroMode ? 0.04 : 0.025));
-
-            noiseGain.gain.setValueAtTime(noiseLevel, time);
-            noiseGain.gain.exponentialRampToValueAtTime(0.001, time + (isZeroMode ? 0.012 : 0.006));
+            noiseGain.gain.setValueAtTime(0.3, time);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.006);
         }
 
         osc.connect(gain);
@@ -502,16 +491,15 @@
             let isAccent = false;
             
             if (accentBeats > 0) {
-                // Tryb metrum: akcent pojawia się co X uderzeń
                 if (beatCounter % accentBeats === 0) {
                     isAccent = true;
                 }
             } else {
-                // Tryb '0': brak podziału metrycznego, traktuj wszystko jako mocne uderzenie wizualne
+                // W trybie 0 wizualnie traktujemy każdy krok jako mocny błysk
                 isAccent = true;
             }
 
-            // Odpalenie dźwięku i lampki w tym samym, ściśle wyliczonym czasie
+            // Przekazujemy stan akcentu do generatora brzmienia
             playClick(nextTickTime, isAccent && accentBeats > 0);
             triggerVisualFlash(nextTickTime, isAccent);
             
@@ -529,7 +517,7 @@
             playBtn.textContent = 'START';
             playBtn.style.background = '#00e676';
             isPlaying = false;
-            ledIndicator.className = 'led-indicator'; // Zgaś przy stopie
+            ledIndicator.className = 'led-indicator'; 
         } else {
             beatCounter = 0; 
             nextTickTime = audioCtx.currentTime + 0.05;
