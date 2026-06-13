@@ -1,273 +1,138 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Metronom</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #1a1a2e;
-      color: #f5f5f5;
-    }
-
-    .container {
-      width: min(520px, 100%);
-      padding: 28px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.08);
-      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.2);
-      backdrop-filter: blur(18px);
-    }
-
-    h1 {
-      margin: 0 0 20px;
-      font-size: 1.8rem;
-      text-align: center;
-    }
-
-    label {
-      display: block;
-      margin: 16px 0 6px;
-      font-size: 0.95rem;
-      color: #ccd6f6;
-    }
-
-    input[type="range"], input[type="number"], select {
-      width: 100%;
-      border-radius: 10px;
-      border: none;
-      padding: 12px 14px;
-      background: rgba(255, 255, 255, 0.12);
-      color: #f5f5f5;
-      font-size: 1rem;
-      outline: none;
-    }
-
-    input[type="range"] {
-      accent-color: #66fcf1;
-    }
-
-    .row {
-      display: grid;
-      gap: 10px;
-      grid-template-columns: 1fr 1fr;
-      align-items: end;
-    }
-
-    .row button {
-      grid-column: span 2;
-    }
-
-    button {
-      width: 100%;
-      border: none;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 1rem;
-      cursor: pointer;
-      color: #0b0c10;
-      background: #66fcf1;
-      transition: transform 0.16s ease, filter 0.16s ease;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-    }
-
-    .status {
-      margin-top: 14px;
-      text-align: center;
-      color: #a3bffa;
-      font-size: 0.95rem;
-    }
-
-    .credits {
-      margin-top: 20px;
-      color: #7e8cb5;
-      text-align: center;
-      font-size: 0.85rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metronom URL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #121212;
+            color: #ffffff;
+            padding-top: 50px;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        h1 { font-size: 4rem; margin: 10px 0; color: #00e676; }
+        input[type=range] {
+            width: 100%;
+            margin: 20px 0;
+        }
+        button {
+            background: #00e676;
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover { background: #00b359; }
+        .info { color: #888; font-size: 0.9rem; margin-top: 15px; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Metronom</h1>
 
-    <label for="bpm">Tempo (BPM)</label>
-    <input id="bpm" type="range" min="30" max="240" step="1" value="120" />
-    <input id="bpmNumber" type="number" min="30" max="240" value="120" />
+<div class="container">
+    <h2>Metronom</h2>
+    <h1 id="bpmDisplay">120</h1>
+    <p>BPM</p>
+    
+    <input type="range" id="bpmSlider" min="40" max="250" value="120">
+    <br>
+    <button id="playBtn">START</button>
+    
+    <p class="info">Adres URL aktualizuje się automatycznie.</p>
+</div>
 
-    <div class="row">
-      <div>
-        <label for="beatCount">Liczba uderzeń</label>
-        <select id="beatCount">
-          <option value="2">2/4</option>
-          <option value="3">3/4</option>
-          <option value="4" selected>4/4</option>
-          <option value="5">5/4</option>
-          <option value="6">6/8</option>
-        </select>
-      </div>
-      <div>
-        <label for="subdivision">Podział</label>
-        <select id="subdivision">
-          <option value="1" selected>ćwierć</option>
-          <option value="2">ósma</option>
-          <option value="3">trójdzielna</option>
-          <option value="4">szesnasta</option>
-        </select>
-      </div>
-    </div>
-
-    <button id="toggle">Start</button>
-    <div class="status" id="status">Gotowy</div>
-    <div class="credits">Ustawienia są zapamiętywane w adresie URL.</div>
-  </div>
-
-  <script>
-    const bpmInput = document.getElementById('bpm');
-    const bpmNumber = document.getElementById('bpmNumber');
-    const beatCount = document.getElementById('beatCount');
-    const subdivision = document.getElementById('subdivision');
-    const toggleButton = document.getElementById('toggle');
-    const status = document.getElementById('status');
-
-    let audioContext = null;
-    let schedulerId = null;
-    let nextNoteTime = 0;
-    let currentBeat = 0;
+<script>
+    let audioCtx = null;
     let isPlaying = false;
+    let nextTickTime = 0.0;
+    let timerId = null;
+    
+    const bpmSlider = document.getElementById('bpmSlider');
+    const bpmDisplay = document.getElementById('bpmDisplay');
+    const playBtn = document.getElementById('playBtn');
 
-    function parseParams() {
-      const params = new URLSearchParams(window.location.search);
-      const bpm = parseInt(params.get('bpm'), 10);
-      const beats = parseInt(params.get('beats'), 10);
-      const sub = parseInt(params.get('sub'), 10);
-      const play = params.get('play');
-      if (!Number.isNaN(bpm)) bpmInput.value = bpm;
-      if (!Number.isNaN(bpm)) bpmNumber.value = bpm;
-      if (![2,3,4,5,6].includes(beats) === false) beatCount.value = beats;
-      if ([1,2,3,4].includes(sub)) subdivision.value = sub;
-      if (play === '1') {
-        startMetronome();
-      }
+    // 1. Odbieranie parametrów z adresu URL przy starcie strony
+    function getBPMFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        const bpm = parseInt(params.get('bpm'));
+        if (bpm && bpm >= 40 && bpm <= 250) {
+            return bpm;
+        }
+        return 120; // domyślne
     }
 
-    function updateUrl() {
-      const params = new URLSearchParams();
-      params.set('bpm', bpmInput.value);
-      params.set('beats', beatCount.value);
-      params.set('sub', subdivision.value);
-      if (isPlaying) {
-        params.set('play', '1');
-      }
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      history.replaceState(null, '', newUrl);
+    // 2. Aktualizacja adresu URL bez przeładowania strony
+    function updateURL(bpm) {
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?bpm=' + bpm;
+        window.history.pushState({path: newUrl}, '', newUrl);
     }
 
-    function createClick(time, isAccent) {
-      if (!audioContext) return;
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-      oscillator.frequency.value = isAccent ? 1000 : 700;
-      gain.gain.value = 1;
-      oscillator.start(time);
-      oscillator.stop(time + 0.06);
-    }
+    // Ustawienie początkowej wartości
+    let currentBPM = getBPMFromURL();
+    bpmSlider.value = currentBPM;
+    bpmDisplay.textContent = currentBPM;
+    updateURL(currentBPM);
 
-    function scheduleNote() {
-      const secondsPerBeat = 60.0 / parseFloat(bpmInput.value);
-      const interval = secondsPerBeat / parseInt(subdivision.value, 10);
-      const accent = currentBeat === 0;
-      createClick(nextNoteTime, accent);
-      nextNoteTime += interval;
-      currentBeat += 1;
-      if (currentBeat >= parseInt(beatCount.value, 10) * parseInt(subdivision.value, 10)) {
-        currentBeat = 0;
-      }
+    // Reakcja na zmianę suwaka
+    bpmSlider.addEventListener('input', (e) => {
+        currentBPM = e.target.value;
+        bpmDisplay.textContent = currentBPM;
+        updateURL(currentBPM);
+    });
+
+    // Silnik audio metronomu
+    function playClick(time) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.frequency.value = 1000; // częstotliwość kliku w Hz
+        gain.gain.setValueAtTime(1, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); // czas trwania kliku
+
+        osc.start(time);
+        osc.stop(time + 0.05);
     }
 
     function scheduler() {
-      while (audioContext && nextNoteTime < audioContext.currentTime + 0.1) {
-        scheduleNote();
-      }
-      schedulerId = requestAnimationFrame(scheduler);
+        while (nextTickTime < audioCtx.currentTime + 0.1) {
+            playClick(nextTickTime);
+            nextTickTime += 60.0 / currentBPM;
+        }
+        timerId = setTimeout(scheduler, 25);
     }
 
-    function startMetronome() {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (isPlaying) return;
-      isPlaying = true;
-      currentBeat = 0;
-      nextNoteTime = audioContext.currentTime + 0.05;
-      schedulerId = requestAnimationFrame(scheduler);
-      toggleButton.textContent = 'Stop';
-      status.textContent = `Gra: ${bpmInput.value} BPM, ${beatCount.value}/${subdivision.value}`;
-      updateUrl();
-    }
-
-    function stopMetronome() {
-      if (!isPlaying) return;
-      isPlaying = false;
-      cancelAnimationFrame(schedulerId);
-      schedulerId = null;
-      toggleButton.textContent = 'Start';
-      status.textContent = 'Zatrzymane';
-      updateUrl();
-    }
-
-    bpmInput.addEventListener('input', () => {
-      bpmNumber.value = bpmInput.value;
-      status.textContent = `Tempo ${bpmInput.value} BPM`;
-      updateUrl();
+    playBtn.addEventListener('click', () => {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        if (isPlaying) {
+            clearTimeout(timerId);
+            playBtn.textContent = 'START';
+            playBtn.style.background = '#00e676';
+            isPlaying = false;
+        } else {
+            nextTickTime = audioCtx.currentTime + 0.05;
+            scheduler();
+            playBtn.textContent = 'STOP';
+            playBtn.style.background = '#ff1744';
+            isPlaying = true;
+        }
     });
+</script>
 
-    bpmNumber.addEventListener('change', () => {
-      let value = parseInt(bpmNumber.value, 10);
-      if (Number.isNaN(value)) value = 120;
-      value = Math.min(Math.max(value, 30), 240);
-      bpmNumber.value = value;
-      bpmInput.value = value;
-      status.textContent = `Tempo ${value} BPM`;
-      updateUrl();
-    });
-
-    beatCount.addEventListener('change', () => {
-      status.textContent = `Liczba uderzeń: ${beatCount.value}`;
-      updateUrl();
-    });
-
-    subdivision.addEventListener('change', () => {
-      status.textContent = `Podział: ${subdivision.options[subdivision.selectedIndex].text}`;
-      updateUrl();
-    });
-
-    toggleButton.addEventListener('click', () => {
-      if (isPlaying) {
-        stopMetronome();
-      } else {
-        startMetronome();
-      }
-    });
-
-    window.addEventListener('popstate', () => {
-      parseParams();
-    });
-
-    parseParams();
-    updateUrl();
-  </script>
 </body>
 </html>
