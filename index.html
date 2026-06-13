@@ -236,11 +236,10 @@
         
         <div class="floating-display">
             <div class="accent-selector">
-                <button class="accent-btn active" data-beats="0">0</button>
+                <button class="accent-btn" data-beats="0">0</button>
                 <button class="accent-btn" data-beats="2">2</button>
                 <button class="accent-btn" data-beats="3">3</button>
-                <button class="accent-btn" data-beats="4">4</button>
-            </div>
+                <button class="accent-btn active" data-beats="4">4</button> </div>
 
             <div class="display-row">
                 <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
@@ -265,7 +264,7 @@
     let timerId = null;
     
     let beatCounter = 0;
-    let accentBeats = 0; 
+    let accentBeats = 4; // Domyślnie ustawione na akcent co 4 (miara 4/4)
 
     const bpmInput = document.getElementById('bpmInput');
     const playBtn = document.getElementById('playBtn');
@@ -421,7 +420,6 @@
         }, delayMs);
     }
 
-    // NAPRAWIONY MODUŁ AUDIO: Czysta i stabilna głośność bez wahań pulsu
     function playClick(time, isAccentMode) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -441,24 +439,21 @@
         filter.type = 'bandpass';
         osc.type = 'triangle';
 
-        // KLUCZOWA POPRAWKA: Jeśli tryb to 0, KAŻDY klik dostaje parametry mocnego akcentu
         const forceFullPower = (accentBeats === 0);
 
         if (isAccentMode || forceFullPower) {
-            // POTĘŻNE UDERZENIE (Dla akcentu "Raz" LUB całego trybu jednostajnego "0")
             osc.frequency.setValueAtTime(1200, time);
             osc.frequency.exponentialRampToValueAtTime(550, time + 0.015);
             
             filter.frequency.value = 1600;
             filter.Q.value = 5;
 
-            gain.gain.setValueAtTime(1.0, time); // 100% Mocy audio
+            gain.gain.setValueAtTime(1.0, time); 
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
 
             noiseGain.gain.setValueAtTime(0.9, time); 
             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
         } else {
-            // ZWYKŁA MIARA (Tylko w trybach podziału 2, 3, 4 dla uderzeń pobocznych)
             osc.frequency.setValueAtTime(750, time);
             osc.frequency.exponentialRampToValueAtTime(350, time + 0.012);
             
@@ -495,11 +490,9 @@
                     isAccent = true;
                 }
             } else {
-                // W trybie 0 wizualnie traktujemy każdy krok jako mocny błysk
                 isAccent = true;
             }
 
-            // Przekazujemy stan akcentu do generatora brzmienia
             playClick(nextTickTime, isAccent && accentBeats > 0);
             triggerVisualFlash(nextTickTime, isAccent);
             
