@@ -2,9 +2,12 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Metronom URL</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -15,37 +18,36 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh; /* Sztywna wysokość okna */
-            overflow: hidden; /* Blokada scrollowania ekranu */
-            box-sizing: border-box;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed; /* Zapobiega przypadkowemu przeciąganiu strony (overscroll) */
+            width: 100%;
         }
         
         .container {
             width: 100%;
             max-width: 450px;
-            height: 100vh; /* Rozciągnięcie na pełny ekran telefonu w pionie */
+            height: 100vh;
             background: #1e1e1e;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Rozpycha elementy do krawędzi */
         }
 
-        /* Wielkie przyciski dotykowe na krańcach ekranu */
+        /* Guziki góra/dół - dopasowane rozmiarowo do kciuka, bezpieczna wysokość */
         .wide-step-btn {
             background: #2a2a2a;
             color: #fff;
             border: none;
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: bold;
             width: 100%;
-            height: 15vh; /* Zawsze zajmują 15% wysokości ekranu */
+            height: 60px; /* Stała wysokość, która nie wypycha dołu */
+            flex-shrink: 0; /* Zakaz kurczenia przycisków */
             cursor: pointer;
-            transition: background 0.1s;
-            outline: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            -webkit-user-select: none; /* Blokada zaznaczania tekstu przy szybkim klikaniu */
+            -webkit-user-select: none;
             user-select: none;
         }
         .wide-step-btn:active {
@@ -53,33 +55,46 @@
             color: #00e676;
         }
 
-        /* Środkowa sekcja sterowania */
+        /* Środkowa sekcja robocza - podział na lewą i prawą stronę */
         .main-content {
+            flex: 1; /* Zajmuje całą dostępną przestrzeń między guzikami */
+            display: flex;
+            flex-direction: row; /* Układ obok siebie: lewa (tekst/start) | prawa (suwak) */
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            overflow: hidden;
+        }
+
+        /* Lewa kolumna: BPM oraz przycisk START/STOP */
+        .left-column {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-around; /* Równomierne rozłożenie w pionie */
-            padding: 10px 20px;
-            height: 70vh;
+            justify-content: center;
+            gap: 30px;
+            height: 100%;
         }
 
         /* Pole wpisywania tempa */
         .bpm-input {
-            font-size: 5.5rem;
+            font-size: 5rem;
             font-weight: bold;
             color: #00e676;
             background: transparent;
             border: none;
             border-bottom: 3px dashed #333;
             text-align: center;
-            width: 220px;
+            width: 180px;
             outline: none;
+            margin: 0;
         }
         .bpm-input:focus {
             border-bottom: 3px solid #00e676;
         }
-        /* Ukrywanie strzałek w input type=number */
+        
+        /* Ukrywanie fabrycznych strzałek inputów */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -89,43 +104,58 @@
             -moz-appearance: textfield;
         }
 
-        /* Kontener dla pionowego suwaka */
-        .slider-wrapper {
-            height: 35vh; /* Suwak zajmuje 35% wysokości całego ekranu */
+        /* Prawa kolumna: Miejsce na pionowy suwak */
+        .right-column {
+            width: 70px;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
+            position: relative;
         }
 
-        /* Obrócenie suwaka do pionu */
+        /* Kontener pozycjonujący i obracający suwak */
+        .slider-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 95%; /* Dokładnie 95% wysokości środkowej sekcji */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Pionowy fader dostosowany do wysokości kontenera wrapper */
         input[type=range] {
             -webkit-appearance: none;
-            transform: rotate(-90deg); /* Obrót o 90 stopni w lewo */
-            width: 30vh; /* Szerokość staje się wysokością po obrocie */
+            transform: rotate(-90deg);
+            /* Szerokość staje się wysokością po obrocie. Pobiera ją z wysokości rodzica */
+            width: calc(100vh - 120px - 40px); 
             background: #333;
-            height: 8px;
-            border-radius: 4px;
+            height: 10px;
+            border-radius: 5px;
             outline: none;
+            margin: 0;
         }
 
-        /* Stylizacja thumba (suwaka) dla lepszego chwytu */
+        /* Suwak (Thumb) przystosowany do ekranów dotykowych */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: #00e676;
             cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
         input[type=range]::-moz-range-thumb {
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: #00e676;
             cursor: pointer;
             border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
         /* Główny przycisk START/STOP */
@@ -133,15 +163,16 @@
             background: #00e676;
             color: #000;
             border: none;
-            padding: 15px 0;
-            font-size: 1.5rem;
+            padding: 18px 0;
+            font-size: 1.4rem;
             font-weight: bold;
             border-radius: 35px;
             cursor: pointer;
-            width: 90%;
-            max-width: 300px;
+            width: 100%;
+            max-width: 200px;
             -webkit-user-select: none;
             user-select: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
         .main-btn:hover { background: #00b359; }
     </style>
@@ -152,13 +183,16 @@
     <button class="wide-step-btn" id="plusBtn">+</button>
     
     <div class="main-content">
-        <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
-        
-        <div class="slider-wrapper">
-            <input type="range" id="bpmSlider" min="40" max="250" value="120">
+        <div class="left-column">
+            <input type="number" id="bpmInput" class="bpm-input" min="40" max="250" value="120">
+            <button id="playBtn" class="main-btn">START</button>
         </div>
         
-        <button id="playBtn" class="main-btn">START</button>
+        <div class="right-column">
+            <div class="slider-wrapper">
+                <input type="range" id="bpmSlider" min="40" max="250" value="120">
+            </div>
+        </div>
     </div>
 
     <button class="wide-step-btn" id="minusBtn">−</button>
@@ -203,13 +237,13 @@
     let currentBPM = getBPMFromURL();
     setTempo(currentBPM);
 
-    // Ponieważ suwak jest obrócony o -90 stopni:
-    // ruch w górę fizycznie zwiększa wartość, ruch w dół zmniejsza.
+    // Obsługa wejścia suwaka
     bpmSlider.addEventListener('input', (e) => {
         setTempo(e.target.value, false);
         bpmInput.value = currentBPM;
     });
 
+    // Obsługa bezpośredniego wpisywania z klawiatury
     bpmInput.addEventListener('input', (e) => {
         let val = parseInt(e.target.value);
         if (val) {
@@ -225,6 +259,7 @@
         setTempo(val);
     });
 
+    // Obsługa wielkich przycisków kroków
     plusBtn.addEventListener('click', () => {
         setTempo(parseInt(currentBPM) + 1);
     });
@@ -233,6 +268,7 @@
         setTempo(parseInt(currentBPM) - 1);
     });
 
+    // Silnik dźwiękowy Web Audio API
     function playClick(time) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -271,6 +307,12 @@
             isPlaying = true;
         }
     });
+
+    // Blokowanie gestów "pull-to-refresh" na urządzeniach mobilnych
+    document.addEventListener('touchmove', function(e) {
+        if(e.touches.length > 1) return;
+        e.preventDefault();
+    }, { passive: false });
 </script>
 
 </body>
