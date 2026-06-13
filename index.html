@@ -39,6 +39,7 @@
             position: relative;
         }
 
+        /* POPRAWIONE: Idealny podział 50/50 bez zaburzania wysokości przez border */
         .huge-btn {
             background: #222222;
             color: #ffffff;
@@ -56,7 +57,10 @@
             outline: none;
         }
         
-        #plusBtn { border-bottom: 2px solid #121212; }
+        /* Zastąpienie border-bottom przez wewnętrzny cień, aby nie dodawać pikseli do wysokości */
+        #plusBtn { 
+            box-shadow: inset 0 -2px 0 #121212; 
+        }
         #plusBtn:active { background: #2a2a2a; color: #00e676; }
         #minusBtn:active { background: #2a2a2a; color: #ff1744; }
 
@@ -121,9 +125,9 @@
             padding-left: 30px; 
         }
 
-        /* ZOPTYMALIZOWANE POLE WPISYWANIA TEMPA */
+        /* Pole wpisywania tempa */
         .bpm-input {
-            font-size: 3.8rem; /* Zmniejszone z 4.5rem dla idealnego dopasowania trzech cyfr */
+            font-size: 3.8rem; 
             font-weight: bold;
             color: #00e676;
             background: transparent;
@@ -134,7 +138,7 @@
             max-width: 100%;
             outline: none;
             margin: 0;
-            letter-spacing: -1px; /* Delikatne zagęszczenie cyfr */
+            letter-spacing: -1px; 
         }
         .bpm-input:focus {
             border-bottom: 3px solid #00e676;
