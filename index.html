@@ -337,7 +337,6 @@
         setTempo(calculatedBPM);
     }
 
-    // setTempo teraz tylko wizualnie aktualizuje suwak i link, nie czyści inputu w trakcie pisania
     function setTempo(newBPM, updateInputElement = true) {
         currentBPM = Math.max(MIN_BPM, Math.min(MAX_BPM, newBPM));
         
@@ -385,7 +384,6 @@
     setTempo(currentBPM);
     setTimeout(updateThumbPosition, 100); 
 
-    // POPRAWKA: Usunąłem zdarzenie 'input'. Zmiana zatwierdza się dopiero po zakończeniu edycji.
     function commitBPM() {
         let val = parseInt(bpmInput.value);
         if (!val || val < MIN_BPM) val = MIN_BPM;
@@ -412,18 +410,16 @@
         });
     });
 
-    // OBSŁUGA KLAWIATURY Z UNIKANIEM INTERFERENCJI PODCZAS WPISYWANIA W INPUT
     window.addEventListener('keydown', (e) => {
         if (document.activeElement === bpmInput) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 commitBPM();
-                bpmInput.blur(); // Wyjście z pola tekstowego po Enterze
+                bpmInput.blur(); 
             }
-            return; // Pozwól na normalne wpisywanie cyfr bez wyzwalania skrótów globalnych
+            return; 
         }
 
-        // Globalne skróty klawiszowe (gdy pole tekstowe nie jest zaznaczone)
         if (e.key === ' ' || e.code === 'Space') {
             e.preventDefault();
             playBtn.click();
@@ -463,6 +459,7 @@
         }, delayMs);
     }
 
+    // ZMODYFIKOWANA FUNKCJA AUDIO - IDEALNE PROPORCJE GŁOŚNOŚCI (100% vs 80%)
     function playClick(time, isAccentMode) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -485,28 +482,31 @@
         const forceFullPower = (accentBeats === 0);
 
         if (isAccentMode || forceFullPower) {
+            // AKCENT (Mocny "Raz" oraz cały tryb 0) -> 100% GŁOŚNOŚCI
             osc.frequency.setValueAtTime(1200, time);
             osc.frequency.exponentialRampToValueAtTime(550, time + 0.015);
             
             filter.frequency.value = 1600;
             filter.Q.value = 5;
 
-            gain.gain.setValueAtTime(1.0, time); 
+            gain.gain.setValueAtTime(1.0, time); // Głośność: 1.0 (100%)
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
 
             noiseGain.gain.setValueAtTime(0.9, time); 
             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
         } else {
+            // POZOSTAŁE UDERZENIA W TAKCIE -> 80% GŁOŚNOŚCI
             osc.frequency.setValueAtTime(750, time);
             osc.frequency.exponentialRampToValueAtTime(350, time + 0.012);
             
             filter.frequency.value = 1000;
             filter.Q.value = 3;
 
-            gain.gain.setValueAtTime(0.4, time); 
+            gain.gain.setValueAtTime(0.8, time); // Głośność: 0.8 (80%)
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
 
-            noiseGain.gain.setValueAtTime(0.3, time);
+            noiseGain.gain.setTimeConstantValueAtTime ? 
+                noiseGain.gain.setValueAtTime(0.7, time) : noiseGain.gain.setValueAtTime(0.7, time);
             noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.006);
         }
 
