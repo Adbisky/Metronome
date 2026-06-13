@@ -39,7 +39,6 @@
             position: relative;
         }
 
-        /* POPRAWIONE: Idealny podział 50/50 bez zaburzania wysokości przez border */
         .huge-btn {
             background: #222222;
             color: #ffffff;
@@ -57,10 +56,15 @@
             outline: none;
         }
         
-        /* Zastąpienie border-bottom przez wewnętrzny cień, aby nie dodawać pikseli do wysokości */
         #plusBtn { 
             box-shadow: inset 0 -2px 0 #121212; 
         }
+        
+        /* POPRAWKA: Dynamiczne centrowanie znaku minus nad dolną belką systemową smartfona */
+        #minusBtn {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
         #plusBtn:active { background: #2a2a2a; color: #00e676; }
         #minusBtn:active { background: #2a2a2a; color: #ff1744; }
 
@@ -72,6 +76,8 @@
             transform: translate(-50%, -50%);
             background: rgba(30, 30, 30, 0.95);
             padding: 20px 20px;
+            /* Zabezpieczenie na wypadek małych ekranów w pionie: panel uniesie się delikatnie nad strefę bezpieczną */
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px) * 0.3);
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             display: flex;
@@ -203,13 +209,15 @@
             user-select: none;
             -webkit-user-select: none;
             cursor: pointer;
+            /* Zabezpieczenie suwaka przed "wchodzeniem" pod dolne zaokrąglenia ekranu */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         .track-line {
             position: absolute;
             left: 50%;
             top: 25px;
-            bottom: 25px;
+            bottom: calc(25px + env(safe-area-inset-bottom, 0px));
             width: 8px;
             background: #252525;
             transform: translateX(-50%);
@@ -319,8 +327,10 @@
 
     function updateThumbPosition() {
         const zoneHeight = sliderZone.clientHeight;
+        // Uwzględniamy dynamiczny padding dolny na smartfonach
+        const safeBottom = parseInt(window.getComputedStyle(sliderZone).paddingBottom) || 0;
         const padding = 25; 
-        const availableHeight = zoneHeight - (padding * 2);
+        const availableHeight = zoneHeight - (padding * 2) - safeBottom;
         
         const percent = (currentBPM - MIN_BPM) / (MAX_BPM - MIN_BPM);
         const topPx = padding + (availableHeight * (1 - percent));
@@ -331,8 +341,9 @@
     function handleSliderTouch(clientY) {
         const rect = sliderZone.getBoundingClientRect();
         const zoneHeight = rect.height;
+        const safeBottom = parseInt(window.getComputedStyle(sliderZone).paddingBottom) || 0;
         const padding = 25;
-        const availableHeight = zoneHeight - (padding * 2);
+        const availableHeight = zoneHeight - (padding * 2) - safeBottom;
         
         let relativeY = clientY - rect.top - padding;
         relativeY = Math.max(0, Math.min(availableHeight, relativeY));
