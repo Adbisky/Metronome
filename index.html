@@ -52,14 +52,13 @@
             -webkit-user-select: none;
             user-select: none;
             outline: none;
-            position: relative;
         }
         
         #plusBtn { 
             box-shadow: inset 0 -2px 0 #121212; 
         }
 
-        /* POPRAWKA: Pozycjonowanie kółek dokładnie 25% od brzegów centralnego wyświetlacza */
+        /* POPRAWKA: Znaczki są pozycjonowane względem całego lewego panelu, a nie przycisków */
         .btn-label {
             position: absolute;
             left: 50%;
@@ -73,24 +72,26 @@
             justify-content: center;
             font-size: 3.5rem;
             font-weight: bold;
-            pointer-events: none;
+            pointer-events: none; /* Kliknięcia przelatują do przycisków pod spodem */
+            z-index: 5;
         }
 
-        /* Odsuwamy w górę od środka (gdzie stoi panel) */
-        #plusBtn .btn-label {
-            top: calc(50% - 140px);
+        /* Centrowanie na ekranie to 50vh. Wyświetlacz ma ok. 210px wysokości (połowa to 105px). 
+           Odsunięcie o dodatkowe 45px daje idealne stałe miejsce na PC i Androidzie */
+        .label-plus {
+            top: calc(50vh - 150px);
         }
 
-        /* Odsuwamy w dół od środka (gdzie stoi panel) */
-        #minusBtn .btn-label {
-            bottom: calc(50% - 140px);
+        .label-minus {
+            top: calc(50vh + 90px);
         }
 
         #plusBtn:active { background: #2a2a2a; }
-        #plusBtn:active .btn-label { color: #00e676; background: rgba(0, 230, 118, 0.1); }
+        .huge-btn:active + .btn-label, 
+        #plusBtn:active ~ .label-plus { color: #00e676; background: rgba(0, 230, 118, 0.1); }
         
         #minusBtn:active { background: #2a2a2a; }
-        #minusBtn:active .btn-label { color: #ff1744; background: rgba(255, 23, 68, 0.1); }
+        #minusBtn:active ~ .label-minus { color: #ff1744; background: rgba(255, 23, 68, 0.1); }
 
         /* Centrowany panel nakładkowy */
         .floating-display {
@@ -265,12 +266,11 @@
 <div class="app-layout">
     
     <div class="left-controls">
-        <button class="huge-btn" id="plusBtn">
-            <span class="btn-label">+</span>
-        </button>
-        <button class="huge-btn" id="minusBtn">
-            <span class="btn-label">−</span>
-        </button>
+        <button class="huge-btn" id="plusBtn"></button>
+        <button class="huge-btn" id="minusBtn"></button>
+        
+        <div class="btn-label label-plus">+</div>
+        <div class="btn-label label-minus">−</div>
         
         <div class="floating-display">
             <div class="accent-selector">
