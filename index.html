@@ -29,40 +29,39 @@
             position: relative;
         }
 
-        /* LEWA STRONA: Sekcja gigantycznych stref dotykowych */
+        /* LEWA STRONA: Sztywny układ pionowy eliminujący nakładanie się elementów */
         .left-controls {
             flex: 1;
             margin-right: 85px; 
             display: flex;
             flex-direction: column;
+            align-items: center; /* Perfekcyjne centrowanie w poziomie na PC i Androidzie */
+            justify-content: center;
             height: 100%;
             position: relative;
+            padding: 20px 0;
         }
 
-        .huge-btn {
-            background: #222222;
-            color: #ffffff;
-            border: none;
-            height: 50dvh;
+        /* Gigantyczne niewidoczne strefy kliku pod spodem */
+        .click-zone-top, .click-zone-bottom {
+            position: absolute;
+            left: 0;
             width: 100%;
+            height: 50%;
             cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            -webkit-user-select: none;
-            user-select: none;
+            z-index: 1;
+            background: #222222;
+            border: none;
             outline: none;
         }
-        
-        #plusBtn { 
-            box-shadow: inset 0 -2px 0 #121212; 
-        }
+        .click-zone-top { top: 0; box-shadow: inset 0 -2px 0 #121212; }
+        .click-zone-bottom { bottom: 0; }
 
-        /* POPRAWKA: Znaczki są pozycjonowane względem całego lewego panelu, a nie przycisków */
+        .click-zone-top:active { background: #2a2a2a; }
+        .click-zone-bottom:active { background: #2a2a2a; }
+
+        /* KÓŁKA ZE ZNAKAMI: wpięte bezpośrednio w układ pionowy flex, na wierzchu stref kliku */
         .btn-label {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
             width: 60px;
             height: 60px;
             background: rgba(255, 255, 255, 0.05);
@@ -72,33 +71,25 @@
             justify-content: center;
             font-size: 3.5rem;
             font-weight: bold;
-            pointer-events: none; /* Kliknięcia przelatują do przycisków pod spodem */
+            pointer-events: none; 
             z-index: 5;
+            transition: color 0.1s, background 0.1s;
         }
 
-        /* Centrowanie na ekranie to 50vh. Wyświetlacz ma ok. 210px wysokości (połowa to 105px). 
-           Odsunięcie o dodatkowe 45px daje idealne stałe miejsce na PC i Androidzie */
-        .label-plus {
-            top: calc(50vh - 150px);
+        /* Odstępy pionowe ustawione na dokładnie 25% wysokości wyświetlacza (wyświetlacz ma ~210px, czyli 210 * 0.25 = ~52px) */
+        .spacer-top {
+            margin-bottom: 52px;
+        }
+        .spacer-bottom {
+            margin-top: 52px;
         }
 
-        .label-minus {
-            top: calc(50vh + 90px);
-        }
+        /* Efekty active przekazywane ze stref kliku do kółek */
+        .click-zone-top:active ~ .label-plus { color: #00e676; background: rgba(0, 230, 118, 0.1); }
+        .click-zone-bottom:active ~ .label-minus { color: #ff1744; background: rgba(255, 23, 68, 0.1); }
 
-        #plusBtn:active { background: #2a2a2a; }
-        .huge-btn:active + .btn-label, 
-        #plusBtn:active ~ .label-plus { color: #00e676; background: rgba(0, 230, 118, 0.1); }
-        
-        #minusBtn:active { background: #2a2a2a; }
-        #minusBtn:active ~ .label-minus { color: #ff1744; background: rgba(255, 23, 68, 0.1); }
-
-        /* Centrowany panel nakładkowy */
+        /* Centralny wyświetlacz jako fizyczny element blokujący we flexie */
         .floating-display {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             background: rgba(30, 30, 30, 0.95);
             padding: 20px 20px;
             border-radius: 20px;
@@ -111,6 +102,7 @@
             z-index: 10;
             border: 1px solid #333;
             width: 250px;
+            height: 212px; /* Stała wysokość ułatwiająca idealne skalowanie */
         }
 
         /* Sekcja wyboru akcentu */
@@ -266,11 +258,10 @@
 <div class="app-layout">
     
     <div class="left-controls">
-        <button class="huge-btn" id="plusBtn"></button>
-        <button class="huge-btn" id="minusBtn"></button>
+        <button class="click-zone-top" id="plusBtn"></button>
+        <button class="click-zone-bottom" id="minusBtn"></button>
         
-        <div class="btn-label label-plus">+</div>
-        <div class="btn-label label-minus">−</div>
+        <div class="btn-label label-plus spacer-top">+</div>
         
         <div class="floating-display">
             <div class="accent-selector">
@@ -287,6 +278,8 @@
 
             <button id="playBtn" class="main-btn">START</button>
         </div>
+        
+        <div class="btn-label label-minus spacer-bottom">−</div>
     </div>
     
     <div class="right-slider-zone" id="sliderZone">
