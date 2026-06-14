@@ -15,7 +15,7 @@
             margin: 0;
             padding: 0;
             display: flex;
-            height: 100dvh; /* POPRAWKA: Dynamiczny viewport zapobiega spychaniu środka na telefonach */
+            height: 100dvh;
             overflow: hidden;
             position: fixed;
             width: 100%;
@@ -24,12 +24,12 @@
         .app-layout {
             display: flex;
             width: 100%;
-            height: 100dvh; /* POPRAWKA: Dynamiczny viewport */
+            height: 100dvh;
             background: #1e1e1e;
             position: relative;
         }
 
-        /* LEWA STRONA: Sekcja gigantycznych przycisków krokowych */
+        /* LEWA STRONA: Sekcja gigantycznych stref dotykowych */
         .left-controls {
             flex: 1;
             margin-right: 85px; 
@@ -43,33 +43,50 @@
             background: #222222;
             color: #ffffff;
             border: none;
-            font-size: 5rem;
-            font-weight: bold;
-            height: 50dvh; /* POPRAWKA: Dynamiczny viewport dla równego podziału */
+            height: 50dvh;
             width: 100%;
             cursor: pointer;
             display: flex;
             justify-content: center;
+            align-items: center;
             -webkit-user-select: none;
             user-select: none;
             outline: none;
+            position: relative; /* Potrzebne do pozycjonowania etykiet tekstowych */
         }
         
-        /* ZMIANA: Przesunięcie plusa do góry */
         #plusBtn { 
             box-shadow: inset 0 -2px 0 #121212; 
-            align-items: flex-start;
-            padding-top: 15dvh;
-        }
-        
-        /* ZMIANA: Przesunięcie minusa do dołu */
-        #minusBtn {
-            align-items: flex-end;
-            padding-bottom: calc(15dvh + env(safe-area-inset-bottom, 0px));
         }
 
-        #plusBtn:active { background: #2a2a2a; color: #00e676; }
-        #minusBtn:active { background: #2a2a2a; color: #ff1744; }
+        /* POPRAWKA: Przeniesienie znaków na absolutne skraje ekranu jako małe kółka, poza zasięg panelu */
+        .btn-label {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            font-weight: bold;
+            pointer-events: none; /* Kliknięcia przelatują do głównego przycisku */
+        }
+
+        #plusBtn .btn-label {
+            top: calc(20px + env(safe-area-inset-top, 0px));
+        }
+
+        #minusBtn .btn-label {
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        }
+
+        #plusBtn:active { background: #2a2a2a; }
+        #plusBtn:active .btn-label { color: #00e676; background: rgba(0, 230, 118, 0.1); }
+        
+        #minusBtn:active { background: #2a2a2a; }
+        #minusBtn:active .btn-label { color: #ff1744; background: rgba(255, 23, 68, 0.1); }
 
         /* Centrowany panel nakładkowy */
         .floating-display {
@@ -204,7 +221,7 @@
             right: 0;
             top: 0;
             width: 85px;
-            height: 100dvh; /* POPRAWKA: Dynamiczny viewport */
+            height: 100dvh;
             background: #151515;
             border-left: 2px solid #121212;
             user-select: none;
@@ -244,8 +261,12 @@
 <div class="app-layout">
     
     <div class="left-controls">
-        <button class="huge-btn" id="plusBtn">+</button>
-        <button class="huge-btn" id="minusBtn">−</button>
+        <button class="huge-btn" id="plusBtn">
+            <span class="btn-label">+</span>
+        </button>
+        <button class="huge-btn" id="minusBtn">
+            <span class="btn-label">−</span >
+        </button>
         
         <div class="floating-display">
             <div class="accent-selector">
