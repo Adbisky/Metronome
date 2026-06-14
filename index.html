@@ -49,21 +49,23 @@
             width: 100%;
             cursor: pointer;
             display: flex;
-            align-items: center;
-            justify-content: flex-start; /* ZMIANA: Przesunięcie znaków do lewej krawędzi */
-            padding-left: 12%;           /* ZMIANA: Szerokie odsunięcie znaków od centrum */
+            justify-content: center;
             -webkit-user-select: none;
             user-select: none;
             outline: none;
         }
         
+        /* ZMIANA: Przesunięcie plusa do góry */
         #plusBtn { 
             box-shadow: inset 0 -2px 0 #121212; 
+            align-items: flex-start;
+            padding-top: 15dvh;
         }
         
-        /* Znak minus i ikona START/STOP są teraz idealnie pośrodku dzięki dopasowaniu wysokości ekranu */
+        /* ZMIANA: Przesunięcie minusa do dołu */
         #minusBtn {
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+            align-items: flex-end;
+            padding-bottom: calc(15dvh + env(safe-area-inset-bottom, 0px));
         }
 
         #plusBtn:active { background: #2a2a2a; color: #00e676; }
